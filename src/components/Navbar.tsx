@@ -1,0 +1,78 @@
+
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Menu, X } from "lucide-react";
+
+const Navbar = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  
+  return (
+    <header className="py-6 border-b border-gray-100 bg-white">
+      <div className="container mx-auto px-4 flex justify-between items-center">
+        <Link to="/" className="text-2xl font-bold text-dwellin-navy">
+          dwellin
+        </Link>
+        
+        {/* Desktop menu */}
+        <nav className="hidden md:flex items-center space-x-8">
+          <Link to="/services" className="text-gray-600 hover:text-dwellin-navy">Services</Link>
+          <Link to="/" className="text-gray-600 hover:text-dwellin-navy">How It Works</Link>
+          <Link to="/" className="text-gray-600 hover:text-dwellin-navy">Sign In</Link>
+          <Button className="bg-dwellin-sky hover:bg-opacity-90 text-white">Get Started</Button>
+        </nav>
+        
+        {/* Mobile menu button */}
+        <button 
+          className="md:hidden"
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+        >
+          {isMenuOpen ? (
+            <X className="h-6 w-6" />
+          ) : (
+            <Menu className="h-6 w-6" />
+          )}
+        </button>
+      </div>
+      
+      {/* Mobile menu */}
+      {isMenuOpen && (
+        <div className="md:hidden py-4 px-4 bg-white shadow-md animate-fade-in">
+          <nav className="flex flex-col space-y-4">
+            <Link 
+              to="/services" 
+              className="py-2 px-4 text-gray-600 hover:bg-gray-100 rounded-md"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Services
+            </Link>
+            <Link 
+              to="/" 
+              className="py-2 px-4 text-gray-600 hover:bg-gray-100 rounded-md"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              How It Works
+            </Link>
+            <Link 
+              to="/" 
+              className="py-2 px-4 text-gray-600 hover:bg-gray-100 rounded-md"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Sign In
+            </Link>
+            <Link to="/">
+              <Button 
+                className="w-full bg-dwellin-sky hover:bg-opacity-90 text-white"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Get Started
+              </Button>
+            </Link>
+          </nav>
+        </div>
+      )}
+    </header>
+  );
+};
+
+export default Navbar;
