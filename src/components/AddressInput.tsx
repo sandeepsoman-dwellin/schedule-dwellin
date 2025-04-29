@@ -41,12 +41,21 @@ const AddressInput = ({ onAddressSelect }: AddressInputProps) => {
           const extractedZipCode = getZipCodeFromPlace(place);
           
           if (extractedZipCode) {
+            // Format the address to include ZIP code (if not already there)
+            let fullAddress = place.formatted_address || "";
+            
+            // Check if ZIP code is already in the address
+            if (!fullAddress.includes(extractedZipCode)) {
+              // If not, append it to the address
+              fullAddress = `${fullAddress} ${extractedZipCode}`;
+            }
+            
             // Update state with full address and zipcode
-            setAddress(place.formatted_address || "");
+            setAddress(fullAddress);
             setZipCode(extractedZipCode);
             
             // Process the address selection
-            handleAddressSelection(place.formatted_address || "", extractedZipCode);
+            handleAddressSelection(fullAddress, extractedZipCode);
           } else {
             toast.error("Couldn't find a ZIP code for this address. Please try another address.");
           }
