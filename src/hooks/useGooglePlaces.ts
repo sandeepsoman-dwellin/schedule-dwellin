@@ -14,11 +14,14 @@ export interface GooglePlacesHookResult {
   placesLoaded: boolean;
   setupAutocomplete: (inputElement: HTMLInputElement) => void;
   getZipCodeFromPlace: (place: any) => string | null;
+  quotaExceeded: boolean;
 }
 
 export function useGooglePlaces(): GooglePlacesHookResult {
   const [placesLoaded, setPlacesLoaded] = useState(false);
+  const [quotaExceeded, setQuotaExceeded] = useState(false);
   const googleScriptRef = useRef<boolean>(false);
+  const originalConsoleError = console.error;
 
   // Initialize Google Maps Places API
   useEffect(() => {
@@ -34,6 +37,16 @@ export function useGooglePlaces(): GooglePlacesHookResult {
       setPlacesLoaded(true);
       return;
     }
+    
+    // Override console.error to detect quota errors
+    console.error = (...args) => {
+      const errorMessage = args.join(' ');
+      if (errorMessage.includes('exceeded your daily request quota')) {
+        setQuotaExceeded(true);
+        toast.error("Address search is limited due to API quota. Please type your full address including ZIP code manually.");
+      }
+      originalConsoleError.apply(console, args);
+    };
     
     // Define the callback function
     window.initGoogleMaps = () => {
@@ -59,6 +72,9 @@ export function useGooglePlaces(): GooglePlacesHookResult {
 
     // Cleanup function
     return () => {
+      // Restore original console.error
+      console.error = originalConsoleError;
+      
       // Check if script exists before trying to remove it
       const scriptElement = document.getElementById('google-maps-script');
       if (scriptElement) {
@@ -120,6 +136,7 @@ export function useGooglePlaces(): GooglePlacesHookResult {
   return {
     placesLoaded,
     setupAutocomplete,
-    getZipCodeFromPlace
+    getZipCodeFromPlace,
+    quotaExceeded
   };
 }

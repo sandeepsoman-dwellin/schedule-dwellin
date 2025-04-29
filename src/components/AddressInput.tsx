@@ -2,7 +2,7 @@
 import React, { useRef, useEffect, useState, ChangeEvent, FormEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, MapPin } from "lucide-react";
+import { Search, MapPin, AlertCircle } from "lucide-react";
 import { useGooglePlaces } from "@/hooks/useGooglePlaces";
 import { toast } from "sonner";
 
@@ -17,11 +17,11 @@ const AddressInput = ({ onAddressSelect }: AddressInputProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<any>(null);
   
-  const { placesLoaded, setupAutocomplete, getZipCodeFromPlace } = useGooglePlaces();
+  const { placesLoaded, setupAutocomplete, getZipCodeFromPlace, quotaExceeded } = useGooglePlaces();
 
   // Set up Places Autocomplete once the Places API is loaded
   useEffect(() => {
-    if (!placesLoaded || !inputRef.current) return;
+    if (!placesLoaded || !inputRef.current || quotaExceeded) return;
     
     try {
       // Setup the autocomplete
@@ -62,7 +62,7 @@ const AddressInput = ({ onAddressSelect }: AddressInputProps) => {
         window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
       }
     };
-  }, [placesLoaded]);
+  }, [placesLoaded, quotaExceeded]);
 
   // When the component mounts, focus the input field for better UX
   useEffect(() => {
@@ -137,13 +137,12 @@ const AddressInput = ({ onAddressSelect }: AddressInputProps) => {
           type="text"
           value={address}
           onChange={handleAddressChange}
-          placeholder="Enter your address"
+          placeholder={quotaExceeded ? "Enter full address with ZIP code (e.g. 123 Main St, City, 12345)" : "Enter your address"}
           className="pl-10 py-6 text-base"
           required
           ref={inputRef}
-          disabled={!placesLoaded}
         />
-        {!placesLoaded && (
+        {!placesLoaded && !quotaExceeded && (
           <div className="absolute inset-y-0 right-12 flex items-center">
             <div className="h-4 w-4 border-t-2 border-b-2 border-dwellin-sky rounded-full animate-spin" />
           </div>
@@ -151,7 +150,7 @@ const AddressInput = ({ onAddressSelect }: AddressInputProps) => {
         <Button 
           type="submit" 
           className="absolute right-1 top-1 bottom-1 px-4 bg-dwellin-sky hover:bg-opacity-90 text-white"
-          disabled={isLoading || !placesLoaded}
+          disabled={isLoading}
         >
           {isLoading ? (
             <div className="h-5 w-5 border-t-2 border-b-2 border-white rounded-full animate-spin" />
@@ -160,7 +159,15 @@ const AddressInput = ({ onAddressSelect }: AddressInputProps) => {
           )}
         </Button>
       </div>
-      {!placesLoaded && <p className="text-sm text-gray-500 mt-2">Loading address search...</p>}
+      {quotaExceeded && (
+        <div className="mt-2 flex items-center text-amber-600">
+          <AlertCircle className="h-4 w-4 mr-1" />
+          <p className="text-sm">Address autocomplete is limited. Please type your full address including ZIP code.</p>
+        </div>
+      )}
+      {!placesLoaded && !quotaExceeded && (
+        <p className="text-sm text-gray-500 mt-2">Loading address search...</p>
+      )}
     </form>
   );
 };
