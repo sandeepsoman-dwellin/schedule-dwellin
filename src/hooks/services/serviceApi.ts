@@ -86,30 +86,34 @@ export const fetchServiceDetails = async (services: ServiceBase[]): Promise<Serv
     throw detailsError;
   }
 
-  // Use a simpler approach with explicit manual type construction to avoid deep instantiation
-  const result: Service[] = services.map((service) => {
+  // Create service objects with explicit type construction to avoid deep instantiation
+  return services.map((service) => {
     // Filter details for current service
     const serviceDetails = details ? details.filter(detail => detail.service_id === service.id) : [];
 
-    // Explicitly create include and exclude arrays without referencing ServiceDetail[]
-    const includeItems = serviceDetails
-      .filter(detail => detail.detail_type === 'include')
-      .map(detail => ({
-        id: detail.id,
-        detail_type: 'include' as const, // Use const assertion
-        description: detail.description
-      }));
+    // Explicitly typed arrays to avoid type inference depth issues
+    const includeItems: Array<{id: string, detail_type: 'include', description: string}> = [];
+    const excludeItems: Array<{id: string, detail_type: 'exclude', description: string}> = [];
     
-    const excludeItems = serviceDetails
-      .filter(detail => detail.detail_type === 'exclude')
-      .map(detail => ({
-        id: detail.id,
-        detail_type: 'exclude' as const, // Use const assertion
-        description: detail.description
-      }));
+    // Manually populate the arrays
+    serviceDetails.forEach(detail => {
+      if (detail.detail_type === 'include') {
+        includeItems.push({
+          id: detail.id,
+          detail_type: 'include',
+          description: detail.description
+        });
+      } else if (detail.detail_type === 'exclude') {
+        excludeItems.push({
+          id: detail.id,
+          detail_type: 'exclude', 
+          description: detail.description
+        });
+      }
+    });
 
     // Create the service object explicitly
-    const serviceWithDetails: Service = {
+    return {
       id: service.id,
       slug: service.slug,
       name: service.name,
@@ -120,11 +124,7 @@ export const fetchServiceDetails = async (services: ServiceBase[]): Promise<Serv
       includes: includeItems,
       excludes: excludeItems
     };
-
-    return serviceWithDetails;
   });
-
-  return result;
 };
 
 // Function to fetch a single service by ID or slug
@@ -166,29 +166,31 @@ export const fetchServiceById = async (id: string): Promise<Service | null> => {
       throw detailsError;
     }
 
-    // Use a similar approach as in fetchServiceDetails with explicit object creation
     const serviceData = service as ServiceBase;
     
-    // Process include details with explicit inline type
-    const includeItems = (details || [])
-      .filter(detail => detail.detail_type === 'include')
-      .map(detail => ({
-        id: detail.id,
-        detail_type: 'include' as const,
-        description: detail.description
-      }));
+    // Explicitly typed arrays to avoid type inference depth issues
+    const includeItems: Array<{id: string, detail_type: 'include', description: string}> = [];
+    const excludeItems: Array<{id: string, detail_type: 'exclude', description: string}> = [];
     
-    // Process exclude details with explicit inline type
-    const excludeItems = (details || [])
-      .filter(detail => detail.detail_type === 'exclude')
-      .map(detail => ({
-        id: detail.id,
-        detail_type: 'exclude' as const,
-        description: detail.description
-      }));
+    // Manually populate the arrays
+    (details || []).forEach(detail => {
+      if (detail.detail_type === 'include') {
+        includeItems.push({
+          id: detail.id,
+          detail_type: 'include',
+          description: detail.description
+        });
+      } else if (detail.detail_type === 'exclude') {
+        excludeItems.push({
+          id: detail.id,
+          detail_type: 'exclude',
+          description: detail.description
+        });
+      }
+    });
 
     // Create the full service object with explicit properties
-    const fullService: Service = {
+    return {
       id: serviceData.id,
       slug: serviceData.slug,
       name: serviceData.name,
@@ -199,8 +201,6 @@ export const fetchServiceById = async (id: string): Promise<Service | null> => {
       includes: includeItems,
       excludes: excludeItems
     };
-
-    return fullService;
   } catch (error) {
     console.error('Error in fetchServiceById:', error);
     toast.error('Failed to load service details');
