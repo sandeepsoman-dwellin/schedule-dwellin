@@ -91,9 +91,9 @@ export const fetchServiceDetails = async (services: ServiceBase[]): Promise<Serv
     // Filter details for current service
     const serviceDetails = details ? details.filter(detail => detail.service_id === service.id) : [];
 
-    // Explicitly typed arrays to avoid type inference depth issues
-    const includeItems: Array<{id: string, detail_type: 'include', description: string}> = [];
-    const excludeItems: Array<{id: string, detail_type: 'exclude', description: string}> = [];
+    // Create the arrays with explicit type annotations
+    const includeItems: {id: string; detail_type: 'include'; description: string}[] = [];
+    const excludeItems: {id: string; detail_type: 'exclude'; description: string}[] = [];
     
     // Manually populate the arrays
     serviceDetails.forEach(detail => {
@@ -112,7 +112,7 @@ export const fetchServiceDetails = async (services: ServiceBase[]): Promise<Serv
       }
     });
 
-    // Create the service object explicitly
+    // Return a service object with explicit structure
     return {
       id: service.id,
       slug: service.slug,
@@ -168,28 +168,30 @@ export const fetchServiceById = async (id: string): Promise<Service | null> => {
 
     const serviceData = service as ServiceBase;
     
-    // Explicitly typed arrays to avoid type inference depth issues
-    const includeItems: Array<{id: string, detail_type: 'include', description: string}> = [];
-    const excludeItems: Array<{id: string, detail_type: 'exclude', description: string}> = [];
+    // Create arrays with explicit type annotations to avoid deep instantiation
+    const includeItems: {id: string; detail_type: 'include'; description: string}[] = [];
+    const excludeItems: {id: string; detail_type: 'exclude'; description: string}[] = [];
     
-    // Manually populate the arrays
-    (details || []).forEach(detail => {
-      if (detail.detail_type === 'include') {
-        includeItems.push({
-          id: detail.id,
-          detail_type: 'include',
-          description: detail.description
-        });
-      } else if (detail.detail_type === 'exclude') {
-        excludeItems.push({
-          id: detail.id,
-          detail_type: 'exclude',
-          description: detail.description
-        });
+    // Manually populate the arrays with simple object literals
+    if (details) {
+      for (const detail of details) {
+        if (detail.detail_type === 'include') {
+          includeItems.push({
+            id: detail.id,
+            detail_type: 'include',
+            description: detail.description
+          });
+        } else if (detail.detail_type === 'exclude') {
+          excludeItems.push({
+            id: detail.id,
+            detail_type: 'exclude',
+            description: detail.description
+          });
+        }
       }
-    });
+    }
 
-    // Create the full service object with explicit properties
+    // Create and return a service object with explicit structure
     return {
       id: serviceData.id,
       slug: serviceData.slug,
