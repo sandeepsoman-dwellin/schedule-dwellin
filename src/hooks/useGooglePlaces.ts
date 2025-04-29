@@ -1,0 +1,140 @@
+
+import { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
+
+// Define Google Maps types
+declare global {
+  interface Window {
+    google: any;
+    initGoogleMaps: () => void;
+  }
+}
+
+export interface GooglePlacesHookResult {
+  placesLoaded: boolean;
+  setupAutocomplete: (inputElement: HTMLInputElement) => void;
+  getZipCodeFromPlace: (place: any) => string | null;
+}
+
+export function useGooglePlaces(): GooglePlacesHookResult {
+  const [placesLoaded, setPlacesLoaded] = useState(false);
+  const googleScriptRef = useRef<boolean>(false);
+  const autocompleteRef = useRef<any>(null);
+
+  // Initialize Google Maps Places API
+  useEffect(() => {
+    // Only run this effect once
+    if (googleScriptRef.current) return;
+    
+    // Mark that we've started loading the script
+    googleScriptRef.current = true;
+    
+    // If already loaded, just set the state
+    if (window.google?.maps?.places) {
+      console.log("Google Maps already loaded");
+      setPlacesLoaded(true);
+      return;
+    }
+    
+    // Define the callback function
+    window.initGoogleMaps = () => {
+      console.log("Google Maps Places API loaded successfully");
+      setPlacesLoaded(true);
+    };
+    
+    // Create the script tag
+    const script = document.createElement('script');
+    script.id = 'google-maps-script';
+    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyC0PUwthcVcCMlhVPbpoCRtEeW0HQgWmbQ&libraries=places&callback=initGoogleMaps`;
+    script.async = true;
+    script.defer = true;
+    
+    // Handle script loading errors
+    script.onerror = () => {
+      console.error("Failed to load Google Maps script");
+      toast.error("Address search is currently unavailable");
+    };
+    
+    // Append the script to the DOM
+    document.head.appendChild(script);
+
+    // Cleanup function
+    return () => {
+      if (document.getElementById('google-maps-script')) {
+        document.getElementById('google-maps-script')?.remove();
+      }
+      
+      // Only delete the callback if we're truly unmounting
+      if (window.initGoogleMaps) {
+        delete window.initGoogleMaps;
+      }
+    };
+  }, []);
+
+  const setupAutocomplete = (inputElement: HTMLInputElement) => {
+    if (!placesLoaded || !inputElement) {
+      console.log("Places not loaded yet or input element not available");
+      return;
+    }
+    
+    try {
+      console.log("Setting up Places Autocomplete");
+      
+      // Clean up previous autocomplete instance if it exists
+      if (autocompleteRef.current) {
+        // Remove previous listeners if any
+        window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
+      }
+      
+      // Create the autocomplete object with US addresses only
+      autocompleteRef.current = new window.google.maps.places.Autocomplete(inputElement, {
+        types: ['address'],
+        componentRestrictions: { country: 'us' },
+        fields: ['address_components', 'formatted_address'],
+      });
+      
+      console.log("Autocomplete setup complete");
+      
+      return autocompleteRef.current;
+    } catch (error) {
+      console.error("Error initializing Places Autocomplete:", error);
+      toast.error("There was a problem with address search. Please try typing your address manually.");
+      return null;
+    }
+  };
+
+  const getZipCodeFromPlace = (place: any): string | null => {
+    if (!place || !place.address_components) {
+      console.error("Invalid place object returned");
+      return null;
+    }
+    
+    // Extract the zipcode (postal_code) from address components
+    const zipCodeComponent = place.address_components.find(
+      (component: any) => component.types.includes('postal_code')
+    );
+    
+    if (zipCodeComponent) {
+      const extractedZipCode = zipCodeComponent.long_name;
+      console.log("ZIP code extracted:", extractedZipCode);
+      return extractedZipCode;
+    }
+    
+    return null;
+  };
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      if (autocompleteRef.current) {
+        window.google?.maps?.event?.clearInstanceListeners?.(autocompleteRef.current);
+      }
+    };
+  }, []);
+
+  return {
+    placesLoaded,
+    setupAutocomplete,
+    getZipCodeFromPlace
+  };
+}
