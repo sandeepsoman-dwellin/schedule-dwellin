@@ -86,8 +86,8 @@ export const fetchServiceDetails = async (services: ServiceBase[]): Promise<Serv
     throw detailsError;
   }
 
-  // Process and organize the service details
-  return services.map(service => {
+  // Process and organize the service details with explicit type annotations
+  const result: Service[] = services.map((service): Service => {
     const serviceDetails = details ? details.filter(detail => detail.service_id === service.id) : [];
     
     const includes: ServiceDetail[] = serviceDetails
@@ -112,6 +112,8 @@ export const fetchServiceDetails = async (services: ServiceBase[]): Promise<Serv
       excludes
     };
   });
+
+  return result;
 };
 
 // Function to fetch a single service by ID or slug
@@ -153,7 +155,9 @@ export const fetchServiceById = async (id: string): Promise<Service | null> => {
       throw detailsError;
     }
 
-    // Process and organize the service details
+    // Process and organize the service details with explicit typing
+    const serviceData = service as ServiceBase;
+    
     const includes: ServiceDetail[] = (details || [])
       .filter(detail => detail.detail_type === 'include')
       .map(detail => ({
@@ -170,11 +174,14 @@ export const fetchServiceById = async (id: string): Promise<Service | null> => {
         description: detail.description
       }));
 
-    return {
-      ...service,
+    // Explicitly construct the service object with the correct type
+    const fullService: Service = {
+      ...serviceData,
       includes,
       excludes
     };
+
+    return fullService;
   } catch (error) {
     console.error('Error in fetchServiceById:', error);
     toast.error('Failed to load service details');
