@@ -21,6 +21,7 @@ const AddressSearch = ({ onSubmit }: AddressSearchProps) => {
   const [address, setAddress] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [placesLoaded, setPlacesLoaded] = useState(false);
+  const [zipCode, setZipCode] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<any>(null);
 
@@ -35,6 +36,7 @@ const AddressSearch = ({ onSubmit }: AddressSearchProps) => {
     // Create a function that Google Maps will call when loaded
     window.initGoogleMaps = () => {
       setPlacesLoaded(true);
+      console.log("Google Maps Places API loaded successfully");
     };
 
     // Create the script tag
@@ -61,6 +63,7 @@ const AddressSearch = ({ onSubmit }: AddressSearchProps) => {
     if (!placesLoaded || !inputRef.current) return;
     
     try {
+      console.log("Setting up Places Autocomplete");
       // Create the autocomplete object
       autocompleteRef.current = new window.google.maps.places.Autocomplete(inputRef.current, {
         types: ['address'],
@@ -71,6 +74,7 @@ const AddressSearch = ({ onSubmit }: AddressSearchProps) => {
       // Add listener for place changes
       autocompleteRef.current.addListener('place_changed', () => {
         const place = autocompleteRef.current.getPlace();
+        console.log("Place selected:", place);
         
         if (!place.address_components) {
           toast.error("Please select an address from the dropdown");
@@ -86,8 +90,11 @@ const AddressSearch = ({ onSubmit }: AddressSearchProps) => {
         );
         
         if (zipCodeComponent) {
-          // We found a zipcode, process the form
-          handleFormSubmit(zipCodeComponent.long_name);
+          // We found a zipcode, store it
+          const extractedZipCode = zipCodeComponent.long_name;
+          console.log("ZIP code extracted:", extractedZipCode);
+          setZipCode(extractedZipCode);
+          handleFormSubmit(extractedZipCode);
         } else {
           toast.error("Couldn't find a ZIP code for this address");
         }
@@ -98,12 +105,12 @@ const AddressSearch = ({ onSubmit }: AddressSearchProps) => {
     }
   }, [placesLoaded]);
 
-  const handleFormSubmit = (zipCode: string) => {
+  const handleFormSubmit = (extractedZipCode: string) => {
     setIsLoading(true);
     
     setTimeout(() => {
       setIsLoading(false);
-      onSubmit(zipCode);
+      onSubmit(extractedZipCode);
     }, 500);
   };
 
@@ -115,16 +122,25 @@ const AddressSearch = ({ onSubmit }: AddressSearchProps) => {
       return;
     }
 
+    // If we already have a zip code from autocomplete, use it
+    if (zipCode) {
+      handleFormSubmit(zipCode);
+      return;
+    }
+
     setIsLoading(true);
     
     // Extract zipcode from address (fallback if autocomplete not used)
     const zipCodeRegex = /\b\d{5}\b/;
     const match = address.match(zipCodeRegex);
-    const zipCode = match ? match[0] : "10001"; // Default to NYC if no zip found
+    const extractedZipCode = match ? match[0] : "10001"; // Default to NYC if no zip found
+    
+    console.log("ZIP code extracted from manual entry:", extractedZipCode);
+    setZipCode(extractedZipCode);
     
     setTimeout(() => {
       setIsLoading(false);
-      onSubmit(zipCode);
+      onSubmit(extractedZipCode);
     }, 500);
   };
 

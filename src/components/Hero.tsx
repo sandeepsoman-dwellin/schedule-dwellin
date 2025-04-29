@@ -8,15 +8,22 @@ const Hero = () => {
   const navigate = useNavigate();
   
   const handleAddressSubmit = (zipCode: string) => {
-    // Mock API call to check if service is available in zip code
-    // In a real implementation, this would call the backend API
-    const isServiceAvailable = Math.random() > 0.2; // 80% chance of availability
+    console.log("ZIP code submitted:", zipCode);
     
-    if (isServiceAvailable) {
-      navigate(`/services?zip=${zipCode}`);
-    } else {
-      navigate(`/unavailable?zip=${zipCode}`);
+    if (!zipCode) {
+      toast.error("Please provide a valid address with ZIP code");
+      return;
     }
+    
+    // Check if zip code is valid (simple validation)
+    if (!/^\d{5}$/.test(zipCode)) {
+      toast.error("Please enter a valid 5-digit ZIP code");
+      return;
+    }
+    
+    // In a real implementation, you might want to check if the service is available in this ZIP code
+    // For now, we'll just forward to the services page with the ZIP code
+    navigate(`/services?zip=${zipCode}`);
   };
 
   return (
