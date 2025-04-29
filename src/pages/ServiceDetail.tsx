@@ -10,14 +10,22 @@ import Footer from "@/components/Footer";
 import { useService } from "@/hooks/useServices";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProfessionals } from "@/hooks/useProfessionals";
+import { toast } from "sonner";
 
 const ServiceDetail = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const zipCode = searchParams.get("zip") || "";
-  const { data: service, isLoading: isLoadingService } = useService(id || "");
+  const { data: service, isLoading: isLoadingService, error } = useService(id || "");
   const { data: professionals, isLoading: isLoadingProfessionals } = useProfessionals();
   const [selectedPro, setSelectedPro] = useState<any>(null);
+
+  useEffect(() => {
+    if (error) {
+      console.error("Error loading service:", error);
+      toast.error("Failed to load service details");
+    }
+  }, [error]);
 
   useEffect(() => {
     if (professionals && professionals.length > 0) {
@@ -26,6 +34,11 @@ const ServiceDetail = () => {
       setSelectedPro(professionals[randomProIndex]);
     }
   }, [professionals]);
+
+  // Add debug logging to help troubleshoot
+  console.log("ServiceDetail - id param:", id);
+  console.log("ServiceDetail - service data:", service);
+  console.log("ServiceDetail - loading state:", isLoadingService);
 
   if (isLoadingService || isLoadingProfessionals) {
     return (
@@ -84,22 +97,34 @@ const ServiceDetail = () => {
             <div>
               <h2 className="text-xl font-bold mb-4">What's Included</h2>
               <ul className="space-y-2">
-                {service.includes.map((item, index) => (
-                  <li key={`included-${index}`} className="flex items-start">
-                    <Check className="text-dwellin-sky mr-2 mt-1" />
-                    <span>{item.description}</span>
+                {service.includes && service.includes.length > 0 ? (
+                  service.includes.map((item, index) => (
+                    <li key={`included-${item.id || index}`} className="flex items-start">
+                      <Check className="text-dwellin-sky mr-2 mt-1" />
+                      <span>{item.description}</span>
+                    </li>
+                  ))
+                ) : (
+                  <li className="flex items-start text-gray-500">
+                    <span>No inclusions specified for this service.</span>
                   </li>
-                ))}
+                )}
               </ul>
 
               <h2 className="text-xl font-bold mt-8 mb-4">What's Not Included</h2>
               <ul className="space-y-2">
-                {service.excludes.map((item, index) => (
-                  <li key={`excluded-${index}`} className="flex items-start text-gray-600">
-                    <span className="mr-2">•</span>
-                    <span>{item.description}</span>
+                {service.excludes && service.excludes.length > 0 ? (
+                  service.excludes.map((item, index) => (
+                    <li key={`excluded-${item.id || index}`} className="flex items-start text-gray-600">
+                      <span className="mr-2">•</span>
+                      <span>{item.description}</span>
+                    </li>
+                  ))
+                ) : (
+                  <li className="flex items-start text-gray-500">
+                    <span>No exclusions specified for this service.</span>
                   </li>
-                ))}
+                )}
               </ul>
             </div>
             

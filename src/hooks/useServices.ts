@@ -161,28 +161,35 @@ export const useService = (id: string) => {
     queryKey: ['service', id],
     queryFn: async (): Promise<Service | null> => {
       try {
-        // Fetch the specific service
+        // Fix 1: First check if this is a slug or ID - if it contains hyphens, it's likely a slug
+        let queryField = 'id';
+        if (id && id.includes('-')) {
+          queryField = 'slug';
+        }
+
+        // Fix 2: Query by either ID or slug
         const { data: service, error } = await supabase
           .from('services')
           .select('*')
-          .eq('id', id)
-          .single();
+          .eq(queryField, id)
+          .maybeSingle(); // Fix 3: Use maybeSingle instead of single to avoid errors if not found
         
         if (error) {
-          console.error('Error fetching service:', error);
+          console.error(`Error fetching service by ${queryField}:`, error);
           toast.error('Failed to load service details');
           throw error;
         }
 
         if (!service) {
+          console.log(`No service found with ${queryField}:`, id);
           return null;
         }
 
-        // Fetch service details for this service
+        // Fix 4: Fetch service details specifically for this service
         const { data: details, error: detailsError } = await supabase
           .from('service_details')
           .select('*')
-          .eq('service_id', id);
+          .eq('service_id', service.id);
         
         if (detailsError) {
           console.error('Error fetching service details:', detailsError);
@@ -191,7 +198,7 @@ export const useService = (id: string) => {
         }
 
         // Process and organize the service details
-        const includes = details
+        const includes = (details || [])
           .filter(detail => detail.detail_type === 'include')
           .map(detail => ({
             id: detail.id,
@@ -199,7 +206,7 @@ export const useService = (id: string) => {
             description: detail.description
           }));
         
-        const excludes = details
+        const excludes = (details || [])
           .filter(detail => detail.detail_type === 'exclude')
           .map(detail => ({
             id: detail.id,
