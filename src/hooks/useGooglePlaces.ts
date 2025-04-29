@@ -19,7 +19,6 @@ export interface GooglePlacesHookResult {
 export function useGooglePlaces(): GooglePlacesHookResult {
   const [placesLoaded, setPlacesLoaded] = useState(false);
   const googleScriptRef = useRef<boolean>(false);
-  const autocompleteRef = useRef<any>(null);
 
   // Initialize Google Maps Places API
   useEffect(() => {
@@ -60,8 +59,10 @@ export function useGooglePlaces(): GooglePlacesHookResult {
 
     // Cleanup function
     return () => {
-      if (document.getElementById('google-maps-script')) {
-        document.getElementById('google-maps-script')?.remove();
+      // Check if script exists before trying to remove it
+      const scriptElement = document.getElementById('google-maps-script');
+      if (scriptElement) {
+        scriptElement.remove();
       }
       
       // Only delete the callback if we're truly unmounting
@@ -74,28 +75,21 @@ export function useGooglePlaces(): GooglePlacesHookResult {
   const setupAutocomplete = (inputElement: HTMLInputElement) => {
     if (!placesLoaded || !inputElement) {
       console.log("Places not loaded yet or input element not available");
-      return;
+      return null;
     }
     
     try {
       console.log("Setting up Places Autocomplete");
       
-      // Clean up previous autocomplete instance if it exists
-      if (autocompleteRef.current) {
-        // Remove previous listeners if any
-        window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
-      }
-      
       // Create the autocomplete object with US addresses only
-      autocompleteRef.current = new window.google.maps.places.Autocomplete(inputElement, {
+      const autocomplete = new window.google.maps.places.Autocomplete(inputElement, {
         types: ['address'],
         componentRestrictions: { country: 'us' },
-        fields: ['address_components', 'formatted_address'],
+        fields: ['address_components', 'formatted_address', 'geometry'],
       });
       
       console.log("Autocomplete setup complete");
-      
-      return autocompleteRef.current;
+      return autocomplete;
     } catch (error) {
       console.error("Error initializing Places Autocomplete:", error);
       toast.error("There was a problem with address search. Please try typing your address manually.");
@@ -122,15 +116,6 @@ export function useGooglePlaces(): GooglePlacesHookResult {
     
     return null;
   };
-
-  // Clean up on unmount
-  useEffect(() => {
-    return () => {
-      if (autocompleteRef.current) {
-        window.google?.maps?.event?.clearInstanceListeners?.(autocompleteRef.current);
-      }
-    };
-  }, []);
 
   return {
     placesLoaded,

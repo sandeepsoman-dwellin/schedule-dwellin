@@ -3,7 +3,7 @@ import React, { useRef, useEffect, useState, ChangeEvent, FormEvent } from "reac
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, MapPin } from "lucide-react";
-import { useGooglePlaces, GooglePlacesHookResult } from "@/hooks/useGooglePlaces";
+import { useGooglePlaces } from "@/hooks/useGooglePlaces";
 import { toast } from "sonner";
 
 interface AddressInputProps {
@@ -23,30 +23,46 @@ const AddressInput = ({ onAddressSelect }: AddressInputProps) => {
   useEffect(() => {
     if (!placesLoaded || !inputRef.current) return;
     
-    // Setup the autocomplete
-    autocompleteRef.current = setupAutocomplete(inputRef.current);
-    
-    if (autocompleteRef.current) {
-      // Add listener for place changes
-      autocompleteRef.current.addListener('place_changed', () => {
-        const place = autocompleteRef.current.getPlace();
-        console.log("Place selected:", place);
-        
-        const extractedZipCode = getZipCodeFromPlace(place);
-        
-        if (extractedZipCode) {
-          // Update state with full address and zipcode
-          setAddress(place.formatted_address || "");
-          setZipCode(extractedZipCode);
+    try {
+      // Setup the autocomplete
+      autocompleteRef.current = setupAutocomplete(inputRef.current);
+      
+      if (autocompleteRef.current) {
+        // Add listener for place changes
+        window.google.maps.event.addListener(autocompleteRef.current, 'place_changed', () => {
+          const place = autocompleteRef.current.getPlace();
+          console.log("Place selected:", place);
           
-          // Process the address selection
-          handleAddressSelection(place.formatted_address || "", extractedZipCode);
-        } else {
-          toast.error("Couldn't find a ZIP code for this address. Please try another address.");
-        }
-      });
+          if (!place.geometry) {
+            console.warn("No geometry returned for this place");
+            return;
+          }
+          
+          const extractedZipCode = getZipCodeFromPlace(place);
+          
+          if (extractedZipCode) {
+            // Update state with full address and zipcode
+            setAddress(place.formatted_address || "");
+            setZipCode(extractedZipCode);
+            
+            // Process the address selection
+            handleAddressSelection(place.formatted_address || "", extractedZipCode);
+          } else {
+            toast.error("Couldn't find a ZIP code for this address. Please try another address.");
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Error setting up autocomplete:", error);
     }
-  }, [placesLoaded, setupAutocomplete, getZipCodeFromPlace]);
+    
+    return () => {
+      // Clean up listeners when component unmounts
+      if (autocompleteRef.current && window.google?.maps?.event) {
+        window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
+      }
+    };
+  }, [placesLoaded]);
 
   // When the component mounts, focus the input field for better UX
   useEffect(() => {
