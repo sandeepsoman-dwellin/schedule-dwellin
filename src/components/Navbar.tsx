@@ -10,9 +10,18 @@ const Navbar = () => {
   return (
     <header className="py-6 border-b border-gray-100 bg-white">
       <div className="container mx-auto px-4 flex justify-between items-center">
-        <Link to="/" className="text-2xl font-bold text-dwellin-navy">
-          dwellin
-        </Link>
+        <a 
+          href="https://www.dwellin.com" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="flex items-center"
+        >
+          <img 
+            src="/lovable-uploads/b31443ae-54c7-4126-9e5a-4f8fb43a0983.png" 
+            alt="Dwellin Logo" 
+            className="h-8 md:h-10"
+          />
+        </a>
         
         {/* Desktop menu */}
         <nav className="hidden md:flex items-center space-x-8">
