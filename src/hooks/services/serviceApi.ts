@@ -86,31 +86,42 @@ export const fetchServiceDetails = async (services: ServiceBase[]): Promise<Serv
     throw detailsError;
   }
 
-  // Process and organize the service details with explicit type annotations
-  const result: Service[] = services.map((service): Service => {
+  // Use a simpler approach with explicit manual type construction to avoid deep instantiation
+  const result: Service[] = services.map((service) => {
+    // Filter details for current service
     const serviceDetails = details ? details.filter(detail => detail.service_id === service.id) : [];
-    
-    const includes: ServiceDetail[] = serviceDetails
+
+    // Explicitly create include and exclude arrays without referencing ServiceDetail[]
+    const includeItems = serviceDetails
       .filter(detail => detail.detail_type === 'include')
       .map(detail => ({
         id: detail.id,
-        detail_type: 'include' as const,
+        detail_type: 'include' as const, // Use const assertion
         description: detail.description
       }));
     
-    const excludes: ServiceDetail[] = serviceDetails
+    const excludeItems = serviceDetails
       .filter(detail => detail.detail_type === 'exclude')
       .map(detail => ({
         id: detail.id,
-        detail_type: 'exclude' as const,
+        detail_type: 'exclude' as const, // Use const assertion
         description: detail.description
       }));
 
-    return {
-      ...service,
-      includes,
-      excludes
+    // Create the service object explicitly
+    const serviceWithDetails: Service = {
+      id: service.id,
+      slug: service.slug,
+      name: service.name,
+      description: service.description,
+      base_price: service.base_price,
+      category: service.category,
+      zip_code: service.zip_code,
+      includes: includeItems,
+      excludes: excludeItems
     };
+
+    return serviceWithDetails;
   });
 
   return result;
@@ -155,35 +166,28 @@ export const fetchServiceById = async (id: string): Promise<Service | null> => {
       throw detailsError;
     }
 
-    // Process and organize the service details with explicit typing
+    // Use a similar approach as in fetchServiceDetails with explicit object creation
     const serviceData = service as ServiceBase;
     
-    // Use explicitly defined types to avoid deep instantiation
-    const includes: Array<{
-      id: string;
-      detail_type: 'include';
-      description: string;
-    }> = (details || [])
+    // Process include details with explicit inline type
+    const includeItems = (details || [])
       .filter(detail => detail.detail_type === 'include')
       .map(detail => ({
         id: detail.id,
-        detail_type: 'include',
+        detail_type: 'include' as const,
         description: detail.description
       }));
     
-    const excludes: Array<{
-      id: string;
-      detail_type: 'exclude';
-      description: string;
-    }> = (details || [])
+    // Process exclude details with explicit inline type
+    const excludeItems = (details || [])
       .filter(detail => detail.detail_type === 'exclude')
       .map(detail => ({
         id: detail.id,
-        detail_type: 'exclude',
+        detail_type: 'exclude' as const,
         description: detail.description
       }));
 
-    // Explicitly construct the service object with the correct type
+    // Create the full service object with explicit properties
     const fullService: Service = {
       id: serviceData.id,
       slug: serviceData.slug,
@@ -192,8 +196,8 @@ export const fetchServiceById = async (id: string): Promise<Service | null> => {
       base_price: serviceData.base_price,
       category: serviceData.category,
       zip_code: serviceData.zip_code,
-      includes,
-      excludes
+      includes: includeItems,
+      excludes: excludeItems
     };
 
     return fullService;
