@@ -89,7 +89,7 @@ export const useServices = (zipCode?: string) => {
           query = query.or(`zip_code.eq.${zipCode},zip_code.is.null`);
         }
         
-        const { data: services, error } = await query.order('name');
+        const { data: servicesData, error } = await query.order('name');
         
         if (error) {
           console.error('Error fetching services:', error);
@@ -97,8 +97,8 @@ export const useServices = (zipCode?: string) => {
           throw error;
         }
 
-        // If no services exist, insert sample data
-        if (!services || services.length === 0) {
+        // If no services exist, insert sample data and fetch them again
+        if (!servicesData || servicesData.length === 0) {
           console.log('No services found, inserting sample data...');
           
           // Insert sample services
@@ -137,13 +137,55 @@ export const useServices = (zipCode?: string) => {
             }
           }
           
-          // Return the newly created services with query that handles the zipCode filter
-          let newQuery = supabase.from('services').select('*');
+          // Fetch the newly created services with query that handles the zipCode filter
+          let refreshedQuery = supabase.from('services').select('*');
           if (zipCode) {
-            newQuery = newQuery.or(`zip_code.eq.${zipCode},zip_code.is.null`);
+            refreshedQuery = refreshedQuery.or(`zip_code.eq.${zipCode},zip_code.is.null`);
           }
-          const { data: refreshedServices } = await newQuery.order('name');
-          services = refreshedServices || [];
+          const { data: refreshedServices, error: refreshError } = await refreshedQuery.order('name');
+          
+          if (refreshError) {
+            console.error('Error fetching refreshed services:', refreshError);
+            toast.error('Failed to load services');
+            return [];
+          }
+          
+          // Fetch service details for all services
+          const { data: details, error: detailsError } = await supabase
+            .from('service_details')
+            .select('*');
+          
+          if (detailsError) {
+            console.error('Error fetching service details:', detailsError);
+            toast.error('Failed to load service details');
+            return [];
+          }
+
+          // Process and organize the service details
+          return (refreshedServices || []).map(service => {
+            const serviceDetails = details ? details.filter(detail => detail.service_id === service.id) : [];
+            const includes = serviceDetails
+              .filter(detail => detail.detail_type === 'include')
+              .map(detail => ({
+                id: detail.id,
+                detail_type: 'include' as const,
+                description: detail.description
+              }));
+            
+            const excludes = serviceDetails
+              .filter(detail => detail.detail_type === 'exclude')
+              .map(detail => ({
+                id: detail.id,
+                detail_type: 'exclude' as const,
+                description: detail.description
+              }));
+
+            return {
+              ...service,
+              includes,
+              excludes
+            };
+          });
         }
 
         // Fetch service details for all services
@@ -158,7 +200,7 @@ export const useServices = (zipCode?: string) => {
         }
 
         // Process and organize the service details
-        return services.map(service => {
+        return servicesData.map(service => {
           const serviceDetails = details ? details.filter(detail => detail.service_id === service.id) : [];
           const includes = serviceDetails
             .filter(detail => detail.detail_type === 'include')
