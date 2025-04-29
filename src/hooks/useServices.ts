@@ -91,7 +91,8 @@ const seedSampleData = async () => {
 };
 
 // Helper function to fetch service details
-const fetchServiceDetails = async (services: any[]) => {
+// Explicitly typing the services parameter and return type to break any circular references
+const fetchServiceDetails = async (services: Array<{ id: string }>) => {
   if (!services || services.length === 0) {
     return [];
   }
