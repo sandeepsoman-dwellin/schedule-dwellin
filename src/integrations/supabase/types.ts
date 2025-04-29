@@ -192,6 +192,7 @@ export type Database = {
           name: string
           slug: string
           updated_at: string
+          zip_code: string | null
         }
         Insert: {
           base_price: number
@@ -202,6 +203,7 @@ export type Database = {
           name: string
           slug: string
           updated_at?: string
+          zip_code?: string | null
         }
         Update: {
           base_price?: number
@@ -212,6 +214,7 @@ export type Database = {
           name?: string
           slug?: string
           updated_at?: string
+          zip_code?: string | null
         }
         Relationships: []
       }

@@ -30,7 +30,7 @@ export default {
         foreground: 'hsl(var(--foreground))',
         dwellin: {
           navy: '#0E2638',
-          sky: '#7FB3EA',
+          sky: '#005058', // Updated from #7FB3EA to #005058
           'light-gray': '#F4F6F8',
           white: '#FFFFFF',
         },

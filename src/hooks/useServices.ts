@@ -18,17 +18,22 @@ export type Service = {
   category: string;
   includes: ServiceDetail[];
   excludes: ServiceDetail[];
+  zip_code: string | null;
 }
 
 export const useServices = (zipCode?: string) => {
   return useQuery({
     queryKey: ['services', zipCode],
     queryFn: async (): Promise<Service[]> => {
-      // Fetch all services
-      const { data: services, error } = await supabase
-        .from('services')
-        .select('*')
-        .order('name');
+      // Fetch services based on zipCode
+      let query = supabase.from('services').select('*');
+      
+      // If zipCode is provided, filter by it or include services with null zip_code
+      if (zipCode) {
+        query = query.or(`zip_code.eq.${zipCode},zip_code.is.null`);
+      }
+      
+      const { data: services, error } = await query.order('name');
       
       if (error) {
         console.error('Error fetching services:', error);
