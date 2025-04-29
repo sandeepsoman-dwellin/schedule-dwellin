@@ -2,16 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
-
-export interface Service {
-  id: string;
-  name: string;
-  base_price: number;
-  description: string;
-  category: string;
-  includes: string[];
-  excludes: string[];
-}
+import type { Service } from "@/hooks/useServices";
 
 interface ServiceCardProps {
   service: Service;

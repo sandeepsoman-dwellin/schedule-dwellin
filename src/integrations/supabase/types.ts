@@ -9,7 +9,304 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      bookings: {
+        Row: {
+          booking_date: string
+          created_at: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          id: string
+          payment_amount: number
+          payment_status: string
+          professional_id: string | null
+          service_id: string | null
+          special_instructions: string | null
+          status: string
+          time_slot: string
+          updated_at: string
+          zip_code: string | null
+        }
+        Insert: {
+          booking_date: string
+          created_at?: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          id?: string
+          payment_amount: number
+          payment_status?: string
+          professional_id?: string | null
+          service_id?: string | null
+          special_instructions?: string | null
+          status?: string
+          time_slot: string
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Update: {
+          booking_date?: string
+          created_at?: string
+          customer_email?: string
+          customer_name?: string
+          customer_phone?: string
+          id?: string
+          payment_amount?: number
+          payment_status?: string
+          professional_id?: string | null
+          service_id?: string | null
+          special_instructions?: string | null
+          status?: string
+          time_slot?: string
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      professionals: {
+        Row: {
+          bio: string
+          completed_jobs: number
+          created_at: string
+          id: string
+          image_url: string | null
+          name: string
+          rating: number
+          slug: string
+          updated_at: string
+          years_experience: number
+        }
+        Insert: {
+          bio: string
+          completed_jobs?: number
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          name: string
+          rating: number
+          slug: string
+          updated_at?: string
+          years_experience: number
+        }
+        Update: {
+          bio?: string
+          completed_jobs?: number
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          name?: string
+          rating?: number
+          slug?: string
+          updated_at?: string
+          years_experience?: number
+        }
+        Relationships: []
+      }
+      service_details: {
+        Row: {
+          created_at: string
+          description: string
+          detail_type: string
+          id: string
+          service_id: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          detail_type: string
+          id?: string
+          service_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          detail_type?: string
+          id?: string
+          service_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_details_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_professionals: {
+        Row: {
+          id: string
+          professional_id: string
+          service_id: string
+        }
+        Insert: {
+          id?: string
+          professional_id: string
+          service_id: string
+        }
+        Update: {
+          id?: string
+          professional_id?: string
+          service_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_professionals_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_professionals_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      services: {
+        Row: {
+          base_price: number
+          category: string
+          created_at: string
+          description: string
+          id: string
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          base_price: number
+          category: string
+          created_at?: string
+          description: string
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          base_price?: number
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      testimonials: {
+        Row: {
+          content: string
+          created_at: string
+          customer_location: string
+          customer_name: string
+          id: string
+          rating: number
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          customer_location: string
+          customer_name: string
+          id?: string
+          rating: number
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          customer_location?: string
+          customer_name?: string
+          id?: string
+          rating?: number
+        }
+        Relationships: []
+      }
+      time_slot_availability: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          is_available: boolean
+          service_id: string | null
+          time_slot: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          is_available?: boolean
+          service_id?: string | null
+          time_slot: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          is_available?: boolean
+          service_id?: string | null
+          time_slot?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_slot_availability_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      waitlist: {
+        Row: {
+          comments: string | null
+          created_at: string
+          email: string
+          id: string
+          services: string[]
+          zip_code: string
+        }
+        Insert: {
+          comments?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          services: string[]
+          zip_code: string
+        }
+        Update: {
+          comments?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          services?: string[]
+          zip_code?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
