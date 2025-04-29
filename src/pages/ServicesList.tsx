@@ -7,92 +7,29 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { type Service } from "@/hooks/useServices";
-
-// Mock services data
-const MOCK_SERVICES: Service[] = [
-  {
-    id: "gutter-cleaning",
-    name: "Gutter Cleaning",
-    base_price: 149,
-    description: "Remove debris from gutters and downspouts to prevent water damage",
-    category: "Exterior",
-    includes: ["Clean all gutters", "Clear downspouts", "Remove debris"],
-    excludes: ["Gutter repairs", "Gutter guards installation"]
-  },
-  {
-    id: "pressure-washing",
-    name: "Pressure Washing",
-    base_price: 199,
-    description: "Clean driveways, walkways, and patios with high-pressure water",
-    category: "Exterior",
-    includes: ["Clean driveway", "Clean walkways", "Clean patio"],
-    excludes: ["Deck washing", "Fence washing"]
-  },
-  {
-    id: "window-cleaning",
-    name: "Window Cleaning",
-    base_price: 179,
-    description: "Interior and exterior window cleaning for crystal clear views",
-    category: "Maintenance",
-    includes: ["Interior window cleaning", "Exterior window cleaning", "Screen cleaning"],
-    excludes: ["Window repairs", "Hard water stain removal"]
-  },
-  {
-    id: "lawn-mowing",
-    name: "Lawn Mowing",
-    base_price: 89,
-    description: "Professional lawn mowing service for a well-maintained yard",
-    category: "Lawn & Garden",
-    includes: ["Mow lawn", "Edge lawn", "Clean up clippings"],
-    excludes: ["Fertilization", "Weed control"]
-  },
-  {
-    id: "hvac-maintenance",
-    name: "HVAC Maintenance",
-    base_price: 159,
-    description: "Regular maintenance for your heating and cooling systems",
-    category: "Maintenance",
-    includes: ["Filter replacement", "System cleaning", "Performance check"],
-    excludes: ["Parts replacement", "Major repairs"]
-  },
-  {
-    id: "house-cleaning",
-    name: "House Cleaning",
-    base_price: 169,
-    description: "Comprehensive house cleaning for a fresh and tidy home",
-    category: "Interior",
-    includes: ["Kitchen cleaning", "Bathroom cleaning", "Vacuuming and mopping"],
-    excludes: ["Deep cleaning", "Window washing"]
-  }
-];
+import { useServices } from "@/hooks/useServices";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const ServicesList = () => {
   const [searchParams] = useSearchParams();
   const zipCode = searchParams.get("zip") || "";
-  const [services, setServices] = useState<Service[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState<string[]>([]);
+  const { data: services, isLoading } = useServices(zipCode);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [categories, setCategories] = useState<string[]>([]);
 
   useEffect(() => {
-    // Simulate API fetch
-    setTimeout(() => {
-      setServices(MOCK_SERVICES);
-      
+    if (services) {
       // Extract unique categories
       const uniqueCategories = Array.from(
-        new Set(MOCK_SERVICES.map(service => service.category))
+        new Set(services.map(service => service.category))
       );
       setCategories(uniqueCategories);
-      
-      setLoading(false);
-    }, 1000);
-  }, []);
+    }
+  }, [services]);
 
   const filteredServices = selectedCategory === "all" 
     ? services 
-    : services.filter(service => service.category === selectedCategory);
+    : services?.filter(service => service.category === selectedCategory);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -140,15 +77,29 @@ const ServicesList = () => {
             </div>
           </div>
           
-          {loading ? (
-            <div className="flex justify-center py-12">
-              <div className="h-10 w-10 border-t-2 border-b-2 border-dwellin-sky rounded-full animate-spin"></div>
+          {isLoading ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array(6).fill(0).map((_, index) => (
+                <div key={index} className="dwellin-card">
+                  <Skeleton className="h-6 w-3/4 mb-2" />
+                  <Skeleton className="h-4 w-full mb-4" />
+                  <div className="flex justify-between items-center mb-4">
+                    <Skeleton className="h-8 w-20" />
+                    <Skeleton className="h-6 w-24 rounded-full" />
+                  </div>
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ))}
             </div>
-          ) : (
+          ) : filteredServices && filteredServices.length > 0 ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredServices.map(service => (
                 <ServiceCard key={service.id} service={service} zipCode={zipCode} />
               ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No services available at this time.</p>
             </div>
           )}
         </div>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useSearchParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -6,113 +7,27 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { type Service } from "@/hooks/useServices";
-
-// Mock pro data
-const MOCK_PROS = [
-  {
-    id: "pro-1",
-    name: "Michael Rodriguez",
-    image: "/placeholder.svg",
-    bio: "Over 15 years of experience in home maintenance. I take pride in exceptional quality and attention to detail.",
-    yearsOfExperience: 15,
-    rating: 4.9,
-    completedJobs: 328
-  },
-  {
-    id: "pro-2",
-    name: "Sarah Johnson",
-    image: "/placeholder.svg",
-    bio: "Certified home service professional with a background in construction. I treat every home as if it were my own.",
-    yearsOfExperience: 8,
-    rating: 4.8,
-    completedJobs: 215
-  }
-];
-
-// Mock services data
-const MOCK_SERVICES: Service[] = [
-  {
-    id: "gutter-cleaning",
-    name: "Gutter Cleaning",
-    base_price: 149,
-    description: "Remove debris from gutters and downspouts to prevent water damage",
-    category: "Exterior",
-    includes: ["Clean all gutters", "Clear downspouts", "Remove debris"],
-    excludes: ["Gutter repairs", "Gutter guards installation"]
-  },
-  {
-    id: "pressure-washing",
-    name: "Pressure Washing",
-    base_price: 199,
-    description: "Clean driveways, walkways, and patios with high-pressure water",
-    category: "Exterior",
-    includes: ["Clean driveway", "Clean walkways", "Clean patio"],
-    excludes: ["Deck washing", "Fence washing"]
-  },
-  {
-    id: "window-cleaning",
-    name: "Window Cleaning",
-    base_price: 179,
-    description: "Interior and exterior window cleaning for crystal clear views",
-    category: "Maintenance",
-    includes: ["Interior window cleaning", "Exterior window cleaning", "Screen cleaning"],
-    excludes: ["Window repairs", "Hard water stain removal"]
-  },
-  {
-    id: "lawn-mowing",
-    name: "Lawn Mowing",
-    base_price: 89,
-    description: "Professional lawn mowing service for a well-maintained yard",
-    category: "Lawn & Garden",
-    includes: ["Mow lawn", "Edge lawn", "Clean up clippings"],
-    excludes: ["Fertilization", "Weed control"]
-  },
-  {
-    id: "hvac-maintenance",
-    name: "HVAC Maintenance",
-    base_price: 159,
-    description: "Regular maintenance for your heating and cooling systems",
-    category: "Maintenance",
-    includes: ["Filter replacement", "System cleaning", "Performance check"],
-    excludes: ["Parts replacement", "Major repairs"]
-  },
-  {
-    id: "house-cleaning",
-    name: "House Cleaning",
-    base_price: 169,
-    description: "Comprehensive house cleaning for a fresh and tidy home",
-    category: "Interior",
-    includes: ["Kitchen cleaning", "Bathroom cleaning", "Vacuuming and mopping"],
-    excludes: ["Deep cleaning", "Window washing"]
-  }
-];
+import { useService } from "@/hooks/useServices";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useProfessionals } from "@/hooks/useProfessionals";
 
 const ServiceDetail = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const zipCode = searchParams.get("zip") || "";
-  const [service, setService] = useState<Service | null>(null);
-  const [selectedPro, setSelectedPro] = useState(MOCK_PROS[0]);
-  const [loading, setLoading] = useState(true);
+  const { data: service, isLoading: isLoadingService } = useService(id || "");
+  const { data: professionals, isLoading: isLoadingProfessionals } = useProfessionals();
+  const [selectedPro, setSelectedPro] = useState<any>(null);
 
   useEffect(() => {
-    // Simulate API fetch
-    setTimeout(() => {
-      const foundService = MOCK_SERVICES.find(service => service.id === id);
-      if (foundService) {
-        setService(foundService);
-      }
-      
+    if (professionals && professionals.length > 0) {
       // Randomly select a pro for this service
-      const randomProIndex = Math.floor(Math.random() * MOCK_PROS.length);
-      setSelectedPro(MOCK_PROS[randomProIndex]);
-      
-      setLoading(false);
-    }, 500);
-  }, [id]);
+      const randomProIndex = Math.floor(Math.random() * professionals.length);
+      setSelectedPro(professionals[randomProIndex]);
+    }
+  }, [professionals]);
 
-  if (loading) {
+  if (isLoadingService || isLoadingProfessionals) {
     return (
       <div className="flex flex-col min-h-screen">
         <Navbar />
@@ -172,7 +87,7 @@ const ServiceDetail = () => {
                 {service.includes.map((item, index) => (
                   <li key={`included-${index}`} className="flex items-start">
                     <Check className="text-dwellin-sky mr-2 mt-1" />
-                    <span>{item}</span>
+                    <span>{item.description}</span>
                   </li>
                 ))}
               </ul>
@@ -182,46 +97,48 @@ const ServiceDetail = () => {
                 {service.excludes.map((item, index) => (
                   <li key={`excluded-${index}`} className="flex items-start text-gray-600">
                     <span className="mr-2">•</span>
-                    <span>{item}</span>
+                    <span>{item.description}</span>
                   </li>
                 ))}
               </ul>
             </div>
             
             {/* Pro Card */}
-            <div>
-              <h2 className="text-xl font-bold mb-4">Meet Your Pro</h2>
-              <Card className="p-6">
-                <div className="flex items-center mb-4">
-                  <Avatar className="h-16 w-16 border-2 border-dwellin-sky">
-                    <AvatarImage src={selectedPro.image} alt={selectedPro.name} />
-                    <AvatarFallback className="bg-dwellin-navy text-white text-xl">
-                      {selectedPro.name.split(' ').map(n => n[0]).join('')}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="ml-4">
-                    <h3 className="text-lg font-bold">{selectedPro.name}</h3>
-                    <div className="flex items-center">
-                      <Award className="h-4 w-4 text-dwellin-sky mr-1" />
-                      <span className="text-sm">{selectedPro.rating} stars • {selectedPro.completedJobs}+ jobs</span>
+            {selectedPro && (
+              <div>
+                <h2 className="text-xl font-bold mb-4">Meet Your Pro</h2>
+                <Card className="p-6">
+                  <div className="flex items-center mb-4">
+                    <Avatar className="h-16 w-16 border-2 border-dwellin-sky">
+                      <AvatarImage src={selectedPro.image_url || "/placeholder.svg"} alt={selectedPro.name} />
+                      <AvatarFallback className="bg-dwellin-navy text-white text-xl">
+                        {selectedPro.name.split(' ').map((n: string) => n[0]).join('')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="ml-4">
+                      <h3 className="text-lg font-bold">{selectedPro.name}</h3>
+                      <div className="flex items-center">
+                        <Award className="h-4 w-4 text-dwellin-sky mr-1" />
+                        <span className="text-sm">{selectedPro.rating} stars • {selectedPro.completed_jobs}+ jobs</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-                
-                <p className="text-gray-600 mb-4">{selectedPro.bio}</p>
-                
-                <div className="text-sm">
-                  <p className="mb-2 flex items-center">
-                    <Clock className="h-4 w-4 mr-2 text-dwellin-sky" /> 
-                    {selectedPro.yearsOfExperience} years of experience
-                  </p>
-                  <p className="flex items-center">
-                    <Check className="h-4 w-4 mr-2 text-dwellin-sky" /> 
-                    Background checked & insured
-                  </p>
-                </div>
-              </Card>
-            </div>
+                  
+                  <p className="text-gray-600 mb-4">{selectedPro.bio}</p>
+                  
+                  <div className="text-sm">
+                    <p className="mb-2 flex items-center">
+                      <Clock className="h-4 w-4 mr-2 text-dwellin-sky" /> 
+                      {selectedPro.years_experience} years of experience
+                    </p>
+                    <p className="flex items-center">
+                      <Check className="h-4 w-4 mr-2 text-dwellin-sky" /> 
+                      Background checked & insured
+                    </p>
+                  </div>
+                </Card>
+              </div>
+            )}
           </div>
           
           {/* Important Details Section */}
@@ -285,7 +202,7 @@ const ServiceDetail = () => {
               Choose a convenient date and time for your {service.name.toLowerCase()}, and our professional 
               will take care of the rest.
             </p>
-            <Link to={`/booking?service=${id}&zip=${zipCode}`}>
+            <Link to={`/booking?service=${service.slug}&zip=${zipCode}`}>
               <Button className="bg-dwellin-sky hover:bg-opacity-90 text-white px-8 py-6 text-lg">
                 Schedule Now
               </Button>

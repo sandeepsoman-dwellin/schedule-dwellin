@@ -1,12 +1,22 @@
 
+import React, { useState } from "react";
 import Hero from "@/components/Hero";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Check, Shield, Clock, Star } from "lucide-react";
+import { ArrowRight, Check, Clock, Shield, Star } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useTestimonials } from "@/hooks/useTestimonials";
+import { useServices } from "@/hooks/useServices";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Index = () => {
+  const { data: testimonials, isLoading: isLoadingTestimonials } = useTestimonials();
+  const { data: services, isLoading: isLoadingServices } = useServices();
+
+  // Get the first 3 services for featured display
+  const featuredServices = services?.slice(0, 3) || [];
+
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
@@ -62,47 +72,43 @@ const Index = () => {
             </p>
             
             <div className="grid md:grid-cols-3 gap-8">
-              <div className="dwellin-card">
-                <h3 className="text-xl font-bold mb-2">Gutter Cleaning</h3>
-                <p className="text-gray-600 mb-4">Remove debris from gutters and downspouts</p>
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-2xl font-bold">$149</span>
-                  <span className="text-sm bg-dwellin-light-gray px-3 py-1 rounded-full">
-                    Exterior
-                  </span>
+              {isLoadingServices ? (
+                // Loading skeletons for services
+                Array(3).fill(0).map((_, index) => (
+                  <div key={index} className="dwellin-card">
+                    <Skeleton className="h-6 w-3/4 mb-2" />
+                    <Skeleton className="h-4 w-full mb-4" />
+                    <div className="flex justify-between items-center mb-4">
+                      <Skeleton className="h-8 w-20" />
+                      <Skeleton className="h-6 w-24 rounded-full" />
+                    </div>
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                ))
+              ) : featuredServices.length > 0 ? (
+                // Display actual services
+                featuredServices.map((service) => (
+                  <div key={service.id} className="dwellin-card">
+                    <h3 className="text-xl font-bold mb-2">{service.name}</h3>
+                    <p className="text-gray-600 mb-4">{service.description}</p>
+                    <div className="flex justify-between items-center mb-4">
+                      <span className="text-2xl font-bold">${service.base_price}</span>
+                      <span className="text-sm bg-dwellin-light-gray px-3 py-1 rounded-full">
+                        {service.category}
+                      </span>
+                    </div>
+                    <Link to={`/services/${service.slug}${location.search}`}>
+                      <Button className="w-full bg-dwellin-sky hover:bg-opacity-90 text-white">
+                        Book Now
+                      </Button>
+                    </Link>
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-3 text-center py-8">
+                  <p className="text-gray-500">No services available at this time.</p>
                 </div>
-                <Button className="w-full bg-dwellin-sky hover:bg-opacity-90 text-white">
-                  Book Now
-                </Button>
-              </div>
-              
-              <div className="dwellin-card">
-                <h3 className="text-xl font-bold mb-2">Pressure Washing</h3>
-                <p className="text-gray-600 mb-4">Clean driveways, walkways, and patios</p>
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-2xl font-bold">$199</span>
-                  <span className="text-sm bg-dwellin-light-gray px-3 py-1 rounded-full">
-                    Exterior
-                  </span>
-                </div>
-                <Button className="w-full bg-dwellin-sky hover:bg-opacity-90 text-white">
-                  Book Now
-                </Button>
-              </div>
-              
-              <div className="dwellin-card">
-                <h3 className="text-xl font-bold mb-2">Window Cleaning</h3>
-                <p className="text-gray-600 mb-4">Interior and exterior window cleaning</p>
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-2xl font-bold">$179</span>
-                  <span className="text-sm bg-dwellin-light-gray px-3 py-1 rounded-full">
-                    Maintenance
-                  </span>
-                </div>
-                <Button className="w-full bg-dwellin-sky hover:bg-opacity-90 text-white">
-                  Book Now
-                </Button>
-              </div>
+              )}
             </div>
             
             <div className="text-center mt-12">
@@ -122,65 +128,56 @@ const Index = () => {
             <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">What Homeowners Say</h2>
             
             <div className="grid md:grid-cols-3 gap-8">
-              <div className="dwellin-card">
-                <div className="flex mb-4">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star key={star} className="h-5 w-5 text-yellow-400 fill-yellow-400" />
-                  ))}
-                </div>
-                <p className="text-gray-600 mb-4">
-                  "Booking was super easy and the pro who cleaned our gutters was professional and thorough. Great experience!"
-                </p>
-                <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-dwellin-navy text-white flex items-center justify-center font-bold">
-                    JD
+              {isLoadingTestimonials ? (
+                // Loading skeletons for testimonials
+                Array(3).fill(0).map((_, index) => (
+                  <div key={index} className="dwellin-card">
+                    <div className="flex mb-4">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Skeleton key={star} className="h-5 w-5 mr-1" />
+                      ))}
+                    </div>
+                    <Skeleton className="h-24 w-full mb-4" />
+                    <div className="flex items-center">
+                      <Skeleton className="w-10 h-10 rounded-full" />
+                      <div className="ml-3">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-3 w-32 mt-1" />
+                      </div>
+                    </div>
                   </div>
-                  <div className="ml-3">
-                    <h4 className="font-bold">John D.</h4>
-                    <p className="text-sm text-gray-500">Seattle, WA</p>
+                ))
+              ) : testimonials && testimonials.length > 0 ? (
+                // Display actual testimonials
+                testimonials.slice(0, 3).map((testimonial) => (
+                  <div key={testimonial.id} className="dwellin-card">
+                    <div className="flex mb-4">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star 
+                          key={star} 
+                          className={`h-5 w-5 ${star <= testimonial.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} 
+                        />
+                      ))}
+                    </div>
+                    <p className="text-gray-600 mb-4">
+                      "{testimonial.content}"
+                    </p>
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 rounded-full bg-dwellin-navy text-white flex items-center justify-center font-bold">
+                        {testimonial.customer_name.split(' ').map(n => n[0]).join('')}
+                      </div>
+                      <div className="ml-3">
+                        <h4 className="font-bold">{testimonial.customer_name}</h4>
+                        <p className="text-sm text-gray-500">{testimonial.customer_location}</p>
+                      </div>
+                    </div>
                   </div>
+                ))
+              ) : (
+                <div className="col-span-3 text-center py-8">
+                  <p className="text-gray-500">No testimonials available at this time.</p>
                 </div>
-              </div>
-              
-              <div className="dwellin-card">
-                <div className="flex mb-4">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star key={star} className="h-5 w-5 text-yellow-400 fill-yellow-400" />
-                  ))}
-                </div>
-                <p className="text-gray-600 mb-4">
-                  "Love the fixed pricing model - no surprises. Our pressure washing job turned out fantastic and the before/after photos were impressive."
-                </p>
-                <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-dwellin-navy text-white flex items-center justify-center font-bold">
-                    SM
-                  </div>
-                  <div className="ml-3">
-                    <h4 className="font-bold">Sarah M.</h4>
-                    <p className="text-sm text-gray-500">Portland, OR</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="dwellin-card">
-                <div className="flex mb-4">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star key={star} className="h-5 w-5 text-yellow-400 fill-yellow-400" />
-                  ))}
-                </div>
-                <p className="text-gray-600 mb-4">
-                  "The convenience of scheduling and paying online saved me so much time. The pro was great and I've already booked another service."
-                </p>
-                <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-dwellin-navy text-white flex items-center justify-center font-bold">
-                    RW
-                  </div>
-                  <div className="ml-3">
-                    <h4 className="font-bold">Robert W.</h4>
-                    <p className="text-sm text-gray-500">Denver, CO</p>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </section>
