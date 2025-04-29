@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from '@/components/ui/sonner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // Mock services data
 const MOCK_SERVICES = [
@@ -81,6 +82,9 @@ const BookingPage = () => {
   );
   const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
   const [showThankYou, setShowThankYou] = useState(false);
+  
+  // New state for payment modal
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   // Get dates starting from 2 business days from now
   const getAvailableDates = () => {
@@ -109,41 +113,23 @@ const BookingPage = () => {
   // Handle form submission
   const onSubmit = (values: BookingFormValues) => {
     console.log("Form values:", values);
-    
-    // In a real app, we would save this data to the backend
-    // For now, simulate payment processing
+    setIsPaymentModalOpen(true);
+  };
+
+  // Handle payment completion
+  const handlePaymentCompletion = () => {
+    setIsPaymentModalOpen(false);
     setIsPaymentProcessing(true);
     
-    // Mock Stripe payment integration
-    // In real implementation, this would call Stripe API
+    // Simulate payment processing
     setTimeout(() => {
-      const script = document.createElement('script');
-      script.src = 'https://js.stripe.com/v3/';
-      script.async = true;
+      setIsPaymentProcessing(false);
+      setShowThankYou(true);
       
-      script.onload = () => {
-        // @ts-ignore - Stripe is loaded from CDN
-        const stripe = window.Stripe('pk_test_your_test_key_here');
-        
-        // In a real app, we would create a checkout session on the backend
-        // and redirect to Stripe Checkout here
-        
-        // For this mock, we'll simulate a successful payment
-        setTimeout(() => {
-          setIsPaymentProcessing(false);
-          setShowThankYou(true);
-          
-          toast.success("Payment successful!", {
-            description: "Your booking has been confirmed.",
-          });
-          
-          // In a real app, we would redirect to a success page with booking details
-          // For now, we'll simulate that with a thank you message
-        }, 2000);
-      };
-      
-      document.body.appendChild(script);
-    }, 1000);
+      toast.success("Payment successful!", {
+        description: "Your booking has been confirmed.",
+      });
+    }, 1500);
   };
 
   // If service not found
@@ -449,6 +435,60 @@ const BookingPage = () => {
           </div>
         </div>
       </main>
+      
+      {/* Payment Modal */}
+      <Dialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Enter Payment Information</DialogTitle>
+          </DialogHeader>
+          
+          <div className="py-4 space-y-4">
+            {/* Mock Credit Card Form */}
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="card-number" className="block text-sm font-medium text-gray-700">Card Number</label>
+                <Input id="card-number" placeholder="1234 5678 9012 3456" className="mt-1" />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="expiration" className="block text-sm font-medium text-gray-700">Expiration</label>
+                  <Input id="expiration" placeholder="MM / YY" className="mt-1" />
+                </div>
+                <div>
+                  <label htmlFor="cvc" className="block text-sm font-medium text-gray-700">CVC</label>
+                  <Input id="cvc" placeholder="123" className="mt-1" />
+                </div>
+              </div>
+              
+              <div>
+                <label htmlFor="card-name" className="block text-sm font-medium text-gray-700">Name on Card</label>
+                <Input id="card-name" placeholder="John Doe" className="mt-1" />
+              </div>
+            </div>
+            
+            <div className="bg-gray-50 p-4 rounded-md text-sm">
+              <div className="flex items-center">
+                <Info className="h-5 w-5 text-gray-500 mr-2" />
+                <p>Your card will only be authorized today. The payment will be processed after the service is completed.</p>
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button variant="outline" onClick={() => setIsPaymentModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                className="bg-dwellin-sky hover:bg-opacity-90" 
+                onClick={handlePaymentCompletion}
+              >
+                Confirm Payment
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       
       <Footer />
     </div>
