@@ -91,7 +91,11 @@ const seedSampleData = async () => {
 };
 
 // Helper function to fetch service details
-const fetchServiceDetails = async (services) => {
+const fetchServiceDetails = async (services: any[]) => {
+  if (!services || services.length === 0) {
+    return [];
+  }
+
   const { data: details, error: detailsError } = await supabase
     .from('service_details')
     .select('*');
@@ -161,18 +165,18 @@ export const useService = (id: string) => {
     queryKey: ['service', id],
     queryFn: async (): Promise<Service | null> => {
       try {
-        // Fix 1: First check if this is a slug or ID - if it contains hyphens, it's likely a slug
+        // First check if this is a slug or ID - if it contains hyphens, it's likely a slug
         let queryField = 'id';
         if (id && id.includes('-')) {
           queryField = 'slug';
         }
 
-        // Fix 2: Query by either ID or slug
+        // Query by either ID or slug
         const { data: service, error } = await supabase
           .from('services')
           .select('*')
           .eq(queryField, id)
-          .maybeSingle(); // Fix 3: Use maybeSingle instead of single to avoid errors if not found
+          .maybeSingle();
         
         if (error) {
           console.error(`Error fetching service by ${queryField}:`, error);
@@ -185,7 +189,7 @@ export const useService = (id: string) => {
           return null;
         }
 
-        // Fix 4: Fetch service details specifically for this service
+        // Fetch service details specifically for this service
         const { data: details, error: detailsError } = await supabase
           .from('service_details')
           .select('*')
