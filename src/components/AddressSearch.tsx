@@ -27,21 +27,29 @@ const AddressSearch = ({ onSubmit, autoNavigate = false }: AddressSearchProps) =
   const [zipCode, setZipCode] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<any>(null);
+  const googleScriptRef = useRef<boolean>(false);
 
   // Initialize Google Maps Places API
   useEffect(() => {
-    // Skip if already loaded or if we're in a server environment
-    if (typeof window === "undefined" || window.google?.maps?.places || document.getElementById('google-maps-script')) {
-      setPlacesLoaded(!!window.google?.maps?.places);
+    // Only run this effect once
+    if (googleScriptRef.current) return;
+    
+    // Mark that we've started loading the script
+    googleScriptRef.current = true;
+    
+    // If already loaded, just set the state
+    if (window.google?.maps?.places) {
+      console.log("Google Maps already loaded");
+      setPlacesLoaded(true);
       return;
     }
-
-    // Create a function that Google Maps will call when loaded
+    
+    // Define the callback function
     window.initGoogleMaps = () => {
-      setPlacesLoaded(true);
       console.log("Google Maps Places API loaded successfully");
+      setPlacesLoaded(true);
     };
-
+    
     // Create the script tag
     const script = document.createElement('script');
     script.id = 'google-maps-script';
@@ -49,13 +57,23 @@ const AddressSearch = ({ onSubmit, autoNavigate = false }: AddressSearchProps) =
     script.async = true;
     script.defer = true;
     
+    // Handle script loading errors
+    script.onerror = () => {
+      console.error("Failed to load Google Maps script");
+      toast.error("Address search is currently unavailable");
+    };
+    
     // Append the script to the DOM
     document.head.appendChild(script);
 
-    // Cleanup function to remove the script if the component unmounts
+    // Cleanup function
     return () => {
       if (document.getElementById('google-maps-script')) {
         document.getElementById('google-maps-script')?.remove();
+      }
+      
+      // Only delete the callback if we're truly unmounting
+      if (window.initGoogleMaps) {
         delete window.initGoogleMaps;
       }
     };
@@ -63,14 +81,25 @@ const AddressSearch = ({ onSubmit, autoNavigate = false }: AddressSearchProps) =
 
   // Set up Places Autocomplete once the Places API is loaded
   useEffect(() => {
-    if (!placesLoaded || !inputRef.current) return;
+    // Only proceed if the Places API is loaded and we have a ref to the input
+    if (!placesLoaded || !inputRef.current) {
+      console.log("Places not loaded yet or input ref not available");
+      return;
+    }
     
     try {
       console.log("Setting up Places Autocomplete");
-      // Create the autocomplete object
+      
+      // Clean up previous autocomplete instance if it exists
+      if (autocompleteRef.current) {
+        // Remove previous listeners if any
+        window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
+      }
+      
+      // Create the autocomplete object with US addresses only
       autocompleteRef.current = new window.google.maps.places.Autocomplete(inputRef.current, {
         types: ['address'],
-        componentRestrictions: { country: 'us' }, // Restrict to US addresses only
+        componentRestrictions: { country: 'us' },
         fields: ['address_components', 'formatted_address'],
       });
 
@@ -80,6 +109,7 @@ const AddressSearch = ({ onSubmit, autoNavigate = false }: AddressSearchProps) =
         console.log("Place selected:", place);
         
         if (!place || !place.address_components) {
+          console.error("Invalid place object returned");
           return;
         }
         
@@ -92,20 +122,30 @@ const AddressSearch = ({ onSubmit, autoNavigate = false }: AddressSearchProps) =
           // We found a zipcode, process it
           const extractedZipCode = zipCodeComponent.long_name;
           console.log("ZIP code extracted:", extractedZipCode);
+          
+          // Update state with full address and zipcode
+          setAddress(place.formatted_address || "");
           setZipCode(extractedZipCode);
           
-          // Make sure to set the full address including zip code
-          setAddress(place.formatted_address || "");
-          
+          // Process the extracted zipcode
           processZipCode(extractedZipCode);
         } else {
           toast.error("Couldn't find a ZIP code for this address. Please try another address.");
         }
       });
+      
+      console.log("Autocomplete setup complete");
     } catch (error) {
       console.error("Error initializing Places Autocomplete:", error);
       toast.error("There was a problem with address search. Please try typing your address manually.");
     }
+
+    // Cleanup autocomplete on component unmount
+    return () => {
+      if (autocompleteRef.current) {
+        window.google?.maps?.event?.clearInstanceListeners?.(autocompleteRef.current);
+      }
+    };
   }, [placesLoaded]);
 
   // Process the zipcode and either submit it or navigate directly
