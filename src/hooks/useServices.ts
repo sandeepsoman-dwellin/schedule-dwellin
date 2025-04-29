@@ -91,8 +91,16 @@ const seedSampleData = async () => {
 };
 
 // Helper function to fetch service details
-// Explicitly typing the services parameter and return type to break any circular references
-const fetchServiceDetails = async (services: Array<{ id: string }>) => {
+// Fix: Define specific types for input and output to prevent recursive type issues
+const fetchServiceDetails = async (services: Array<{
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  base_price: number;
+  category: string;
+  zip_code: string | null;
+}>): Promise<Service[]> => {
   if (!services || services.length === 0) {
     return [];
   }
