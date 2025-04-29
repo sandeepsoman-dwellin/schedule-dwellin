@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, MapPin } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 // Define Google Maps types
 declare global {
@@ -15,9 +16,11 @@ declare global {
 
 interface AddressSearchProps {
   onSubmit: (zipCode: string) => void;
+  autoNavigate?: boolean;
 }
 
-const AddressSearch = ({ onSubmit }: AddressSearchProps) => {
+const AddressSearch = ({ onSubmit, autoNavigate = false }: AddressSearchProps) => {
+  const navigate = useNavigate();
   const [address, setAddress] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [placesLoaded, setPlacesLoaded] = useState(false);
@@ -76,13 +79,13 @@ const AddressSearch = ({ onSubmit }: AddressSearchProps) => {
         const place = autocompleteRef.current.getPlace();
         console.log("Place selected:", place);
         
-        if (!place.address_components) {
-          toast.error("Please select an address from the dropdown");
+        if (!place || !place.address_components) {
+          toast.error("Please select a valid address from the dropdown");
           return;
         }
         
         // Set the full address in the input
-        setAddress(place.formatted_address);
+        setAddress(place.formatted_address || "");
         
         // Extract the zipcode (postal_code) from address components
         const zipCodeComponent = place.address_components.find(
@@ -90,13 +93,13 @@ const AddressSearch = ({ onSubmit }: AddressSearchProps) => {
         );
         
         if (zipCodeComponent) {
-          // We found a zipcode, store it
+          // We found a zipcode, process it
           const extractedZipCode = zipCodeComponent.long_name;
           console.log("ZIP code extracted:", extractedZipCode);
           setZipCode(extractedZipCode);
-          handleFormSubmit(extractedZipCode);
+          processZipCode(extractedZipCode);
         } else {
-          toast.error("Couldn't find a ZIP code for this address");
+          toast.error("Couldn't find a ZIP code for this address. Please try another address.");
         }
       });
     } catch (error) {
@@ -105,13 +108,30 @@ const AddressSearch = ({ onSubmit }: AddressSearchProps) => {
     }
   }, [placesLoaded]);
 
-  const handleFormSubmit = (extractedZipCode: string) => {
+  // Process the zipcode and either submit it or navigate directly
+  const processZipCode = (zipToProcess: string) => {
     setIsLoading(true);
     
-    setTimeout(() => {
+    // Validate zip code
+    if (!/^\d{5}$/.test(zipToProcess)) {
+      toast.error("Please enter a valid 5-digit ZIP code");
       setIsLoading(false);
-      onSubmit(extractedZipCode);
-    }, 500);
+      return;
+    }
+
+    if (autoNavigate) {
+      // Directly navigate to services page with the zip code
+      setTimeout(() => {
+        setIsLoading(false);
+        navigate(`/services?zip=${zipToProcess}`);
+      }, 500);
+    } else {
+      // Use the provided onSubmit handler
+      setTimeout(() => {
+        setIsLoading(false);
+        onSubmit(zipToProcess);
+      }, 500);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -124,25 +144,33 @@ const AddressSearch = ({ onSubmit }: AddressSearchProps) => {
 
     // If we already have a zip code from autocomplete, use it
     if (zipCode) {
-      handleFormSubmit(zipCode);
+      processZipCode(zipCode);
       return;
     }
 
-    setIsLoading(true);
-    
     // Extract zipcode from address (fallback if autocomplete not used)
     const zipCodeRegex = /\b\d{5}\b/;
     const match = address.match(zipCodeRegex);
-    const extractedZipCode = match ? match[0] : "10001"; // Default to NYC if no zip found
     
+    if (!match) {
+      toast.error("Please enter an address with a valid ZIP code or select from the dropdown");
+      return;
+    }
+    
+    const extractedZipCode = match[0];
     console.log("ZIP code extracted from manual entry:", extractedZipCode);
     setZipCode(extractedZipCode);
-    
-    setTimeout(() => {
-      setIsLoading(false);
-      onSubmit(extractedZipCode);
-    }, 500);
+    processZipCode(extractedZipCode);
   };
+
+  // When the component mounts, focus the input field for better UX
+  useEffect(() => {
+    if (inputRef.current) {
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 500);
+    }
+  }, []);
 
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-md mx-auto">
@@ -153,7 +181,13 @@ const AddressSearch = ({ onSubmit }: AddressSearchProps) => {
         <Input
           type="text"
           value={address}
-          onChange={(e) => setAddress(e.target.value)}
+          onChange={(e) => {
+            setAddress(e.target.value);
+            // If the text changes, clear the stored zipCode to prevent using stale data
+            if (zipCode && !e.target.value.includes(zipCode)) {
+              setZipCode("");
+            }
+          }}
           placeholder="Enter your address"
           className="pl-10 py-6 text-base"
           required

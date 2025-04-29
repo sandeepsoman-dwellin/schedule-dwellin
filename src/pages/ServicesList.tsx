@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import ServiceCard from "@/components/ServiceCard";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -11,6 +11,7 @@ import { useServices } from "@/hooks/useServices";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const ServicesList = () => {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const zipCode = searchParams.get("zip") || "";
   const { data: services, isLoading } = useServices(zipCode);
@@ -24,8 +25,13 @@ const ServicesList = () => {
         new Set(services.map(service => service.category))
       );
       setCategories(uniqueCategories);
+      
+      // If no services are available, redirect to waitlist page
+      if (services.length === 0 && !isLoading) {
+        navigate(`/unavailable?zip=${zipCode}`);
+      }
     }
-  }, [services]);
+  }, [services, isLoading, zipCode, navigate]);
 
   const filteredServices = selectedCategory === "all" 
     ? services 
@@ -100,6 +106,12 @@ const ServicesList = () => {
           ) : (
             <div className="text-center py-12">
               <p className="text-gray-500">No services available at this time.</p>
+              <Button 
+                className="mt-4 bg-dwellin-sky hover:bg-opacity-90 text-white"
+                onClick={() => navigate(`/unavailable?zip=${zipCode}`)}
+              >
+                Join Waitlist
+              </Button>
             </div>
           )}
         </div>

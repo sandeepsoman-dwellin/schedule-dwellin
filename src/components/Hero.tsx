@@ -21,8 +21,7 @@ const Hero = () => {
       return;
     }
     
-    // In a real implementation, you might want to check if the service is available in this ZIP code
-    // For now, we'll just forward to the services page with the ZIP code
+    // Navigate to the services page with the ZIP code
     navigate(`/services?zip=${zipCode}`);
   };
 
@@ -46,7 +45,7 @@ const Hero = () => {
           </p>
           
           <div className="mb-12 animate-fade-in" style={{ animationDelay: "0.3s" }}>
-            <AddressSearch onSubmit={handleAddressSubmit} />
+            <AddressSearch onSubmit={handleAddressSubmit} autoNavigate={true} />
             <p className="text-sm text-gray-500 mt-2">Enter your address to see available services</p>
           </div>
           
