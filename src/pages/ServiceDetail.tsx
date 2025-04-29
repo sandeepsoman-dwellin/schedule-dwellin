@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Service } from "@/components/ServiceCard";
+import { type Service } from "@/hooks/useServices";
 
 // Mock pro data
 const MOCK_PROS = [
