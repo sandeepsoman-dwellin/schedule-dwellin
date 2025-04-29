@@ -80,12 +80,8 @@ const AddressSearch = ({ onSubmit, autoNavigate = false }: AddressSearchProps) =
         console.log("Place selected:", place);
         
         if (!place || !place.address_components) {
-          toast.error("Please select a valid address from the dropdown");
           return;
         }
-        
-        // Set the full address in the input
-        setAddress(place.formatted_address || "");
         
         // Extract the zipcode (postal_code) from address components
         const zipCodeComponent = place.address_components.find(
@@ -97,6 +93,10 @@ const AddressSearch = ({ onSubmit, autoNavigate = false }: AddressSearchProps) =
           const extractedZipCode = zipCodeComponent.long_name;
           console.log("ZIP code extracted:", extractedZipCode);
           setZipCode(extractedZipCode);
+          
+          // Make sure to set the full address including zip code
+          setAddress(place.formatted_address || "");
+          
           processZipCode(extractedZipCode);
         } else {
           toast.error("Couldn't find a ZIP code for this address. Please try another address.");
@@ -153,7 +153,7 @@ const AddressSearch = ({ onSubmit, autoNavigate = false }: AddressSearchProps) =
     const match = address.match(zipCodeRegex);
     
     if (!match) {
-      toast.error("Please enter an address with a valid ZIP code or select from the dropdown");
+      toast.error("Please enter an address with a valid ZIP code");
       return;
     }
     
