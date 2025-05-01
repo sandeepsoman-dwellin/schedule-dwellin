@@ -2,12 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useService } from '@/hooks/services';
-import { BookingForm } from '@/components/booking/BookingForm';
-import { OrderSummary } from '@/components/booking/OrderSummary';
-import { PaymentModal } from '@/components/booking/PaymentModal';
-import { BookingConfirmation } from '@/components/booking/BookingConfirmation';
-import { LoadingState } from '@/components/booking/LoadingState';
-import { ErrorState } from '@/components/booking/ErrorState';
+import BookingForm from '@/components/booking/BookingForm';
+import OrderSummary from '@/components/booking/OrderSummary';
+import PaymentModal from '@/components/booking/PaymentModal';
+import BookingConfirmation from '@/components/booking/BookingConfirmation';
+import LoadingState from '@/components/booking/LoadingState';
+import ErrorState from '@/components/booking/ErrorState';
 import { BookingFormData, BookingData, createBooking } from '@/hooks/bookings/bookingApi';
 import { toast } from "sonner";
 
@@ -85,8 +85,7 @@ const BookingPage: React.FC = () => {
     return (
       <BookingConfirmation 
         bookingId={bookingId}
-        serviceName={service.name}
-        onReturnToServices={handleReturnToServices}
+        service={service}
       />
     );
   }
@@ -99,26 +98,35 @@ const BookingPage: React.FC = () => {
       <div className="grid md:grid-cols-3 gap-8">
         {/* Left column: Booking form */}
         <div className="md:col-span-2">
-          <BookingForm onSubmit={handleFormSubmit} />
+          <BookingForm 
+            onSubmit={handleFormSubmit} 
+            isPaymentProcessing={false} 
+          />
         </div>
         
         {/* Right column: Order summary */}
         <div>
           <OrderSummary
-            serviceName={service.name}
-            servicePrice={service.base_price}
-            serviceDetails={service.description}
+            service={service}
+            onPayClick={() => {
+              // Form validation is handled within BookingForm component
+              const bookingForm = document.querySelector('form');
+              if (bookingForm) {
+                bookingForm.dispatchEvent(
+                  new Event('submit', { cancelable: true, bubbles: true })
+                );
+              }
+            }}
+            isPaymentProcessing={false}
           />
         </div>
       </div>
       
       {/* Payment modal */}
       <PaymentModal
-        open={showPaymentModal}
+        isOpen={showPaymentModal}
         onOpenChange={setShowPaymentModal}
-        onPaymentSuccess={handlePaymentSuccess}
-        serviceName={service.name}
-        amount={service.base_price}
+        onPaymentComplete={() => handlePaymentSuccess('credit-card')}
       />
     </div>
   );
