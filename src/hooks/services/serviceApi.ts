@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Service, ServiceBase, ServiceDetail } from "./types";
@@ -166,15 +165,13 @@ export const fetchServiceById = async (id: string): Promise<Service | null> => {
       throw detailsError;
     }
 
-    const serviceData = service as ServiceBase;
-    
-    // Create arrays with explicit type annotations to avoid deep instantiation
+    // Create simple typed arrays to avoid deep instantiation issues
     const includeItems: {id: string; detail_type: 'include'; description: string}[] = [];
     const excludeItems: {id: string; detail_type: 'exclude'; description: string}[] = [];
     
-    // Manually populate the arrays with simple object literals
+    // Process details if they exist
     if (details) {
-      for (const detail of details) {
+      details.forEach(detail => {
         if (detail.detail_type === 'include') {
           includeItems.push({
             id: detail.id,
@@ -188,18 +185,18 @@ export const fetchServiceById = async (id: string): Promise<Service | null> => {
             description: detail.description
           });
         }
-      }
+      });
     }
 
-    // Create and return a service object with explicit structure
+    // Return a properly typed service object
     return {
-      id: serviceData.id,
-      slug: serviceData.slug,
-      name: serviceData.name,
-      description: serviceData.description,
-      base_price: serviceData.base_price,
-      category: serviceData.category,
-      zip_code: serviceData.zip_code,
+      id: service.id,
+      slug: service.slug,
+      name: service.name,
+      description: service.description,
+      base_price: service.base_price,
+      category: service.category,
+      zip_code: service.zip_code,
       includes: includeItems,
       excludes: excludeItems
     };

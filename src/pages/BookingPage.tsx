@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { format, addDays, isWeekend, parseISO } from 'date-fns';
 import { CalendarIcon, Clock, Info, CreditCard, Check } from 'lucide-react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery } from '@tanstack/react-query';
 
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -33,24 +34,8 @@ import {
 } from '@/components/ui/select';
 import { toast } from '@/components/ui/sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-
-// Mock services data
-const MOCK_SERVICES = [
-  {
-    id: "gutter-cleaning",
-    name: "Gutter Cleaning",
-    base_price: 149,
-    description: "Remove debris from gutters and downspouts to prevent water damage",
-    category: "Exterior",
-  },
-  {
-    id: "pressure-washing",
-    name: "Pressure Washing",
-    base_price: 199,
-    description: "Clean driveways, walkways, and patios with high-pressure water",
-    category: "Exterior",
-  },
-];
+import { fetchServiceById } from '@/hooks/services/serviceApi';
+import { createBooking, BookingFormData } from '@/hooks/bookings/bookingApi';
 
 // Time slots available for booking
 const TIME_SLOTS = [
@@ -77,11 +62,16 @@ const BookingPage = () => {
   const serviceId = searchParams.get('service') || '';
   const zipCode = searchParams.get('zip') || '';
   
-  const [service, setService] = useState(() => 
-    MOCK_SERVICES.find(s => s.id === serviceId) || MOCK_SERVICES[0]
-  );
+  // Use React Query to fetch the service data
+  const { data: service, isLoading: serviceLoading, error: serviceError } = useQuery({
+    queryKey: ['service', serviceId],
+    queryFn: () => fetchServiceById(serviceId),
+    enabled: !!serviceId,
+  });
+  
   const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
   const [showThankYou, setShowThankYou] = useState(false);
+  const [bookingId, setBookingId] = useState<string | null>(null);
   
   // New state for payment modal
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -117,23 +107,61 @@ const BookingPage = () => {
   };
 
   // Handle payment completion
-  const handlePaymentCompletion = () => {
+  const handlePaymentCompletion = async () => {
+    if (!service) return;
+    
     setIsPaymentModalOpen(false);
     setIsPaymentProcessing(true);
     
-    // Simulate payment processing
-    setTimeout(() => {
-      setIsPaymentProcessing(false);
-      setShowThankYou(true);
-      
-      toast.success("Payment successful!", {
-        description: "Your booking has been confirmed.",
+    const formValues = form.getValues();
+    
+    try {
+      // Save booking to database
+      const createdBookingId = await createBooking({
+        ...formValues,
+        serviceId: service.id,
+        paymentAmount: service.base_price,
+        zipCode
       });
-    }, 1500);
+      
+      if (createdBookingId) {
+        setBookingId(createdBookingId);
+        setIsPaymentProcessing(false);
+        setShowThankYou(true);
+        
+        toast.success("Payment successful!", {
+          description: "Your booking has been confirmed.",
+        });
+      } else {
+        setIsPaymentProcessing(false);
+        toast.error("Failed to complete booking", {
+          description: "Please try again or contact support.",
+        });
+      }
+    } catch (error) {
+      console.error("Error completing booking:", error);
+      setIsPaymentProcessing(false);
+      toast.error("Failed to complete booking", {
+        description: "Please try again or contact support.",
+      });
+    }
   };
 
+  // If service is loading
+  if (serviceLoading) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        <div className="container mx-auto px-4 py-12 text-center">
+          <h2 className="text-2xl font-bold mb-4">Loading service details...</h2>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
   // If service not found
-  if (!service) {
+  if (serviceError || !service) {
     return (
       <div className="flex flex-col min-h-screen">
         <Navbar />
@@ -165,9 +193,14 @@ const BookingPage = () => {
             <p className="mb-6 text-lg">
               Your {service.name} service has been scheduled. You will receive a confirmation email shortly.
             </p>
-            <p className="mb-8 text-gray-600">
-              A professional will contact you before the scheduled date to confirm the details. If you have any questions, please contact our customer support.
+            <p className="mb-2 text-gray-600">
+              A professional will contact you before the scheduled date to confirm the details.
             </p>
+            {bookingId && (
+              <p className="mb-6 text-sm text-gray-500">
+                Booking Reference: {bookingId}
+              </p>
+            )}
             <Link to="/">
               <Button className="bg-dwellin-sky hover:bg-opacity-90">Return to Home</Button>
             </Link>
@@ -184,7 +217,7 @@ const BookingPage = () => {
       
       <main className="flex-grow py-8">
         <div className="container mx-auto px-4 max-w-4xl">
-          <Link to={`/services/${service.id}?zip=${zipCode}`} className="text-dwellin-navy hover:underline mb-4 inline-flex items-center">
+          <Link to={`/services/${service.slug || service.id}?zip=${zipCode}`} className="text-dwellin-navy hover:underline mb-4 inline-flex items-center">
             ← Back to Service Details
           </Link>
           
