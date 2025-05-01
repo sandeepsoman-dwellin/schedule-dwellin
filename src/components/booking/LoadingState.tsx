@@ -1,10 +1,18 @@
 
 import React from 'react';
+import { Loader2 } from 'lucide-react';
 
-const LoadingState: React.FC = () => {
+interface LoadingStateProps {
+  message?: string;
+}
+
+const LoadingState: React.FC<LoadingStateProps> = ({ 
+  message = "Loading service details..." 
+}) => {
   return (
     <div className="container mx-auto px-4 py-12 text-center">
-      <h2 className="text-2xl font-bold mb-4">Loading service details...</h2>
+      <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+      <h2 className="text-2xl font-bold">{message}</h2>
     </div>
   );
 };

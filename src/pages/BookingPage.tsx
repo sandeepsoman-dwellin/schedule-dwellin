@@ -1,147 +1,125 @@
 
-import React, { useState } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import { toast } from '@/components/ui/sonner';
-import { fetchServiceById } from '@/hooks/services/serviceApi';
-import { createBooking } from '@/hooks/bookings/bookingApi';
-import BookingForm, { BookingFormValues } from '@/components/booking/BookingForm';
-import OrderSummary from '@/components/booking/OrderSummary';
-import PaymentModal from '@/components/booking/PaymentModal';
-import BookingConfirmation from '@/components/booking/BookingConfirmation';
-import LoadingState from '@/components/booking/LoadingState';
-import ErrorState from '@/components/booking/ErrorState';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useService } from '@/hooks/services';
+import { BookingForm } from '@/components/booking/BookingForm';
+import { OrderSummary } from '@/components/booking/OrderSummary';
+import { PaymentModal } from '@/components/booking/PaymentModal';
+import { BookingConfirmation } from '@/components/booking/BookingConfirmation';
+import { LoadingState } from '@/components/booking/LoadingState';
+import { ErrorState } from '@/components/booking/ErrorState';
+import { BookingFormData, BookingData, createBooking } from '@/hooks/bookings/bookingApi';
+import { toast } from "sonner";
 
 const BookingPage: React.FC = () => {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const serviceId = searchParams.get('service') || '';
-  const zipCode = searchParams.get('zip') || '';
+  const navigate = useNavigate();
+  const serviceId = searchParams.get('serviceId') || '';
   
-  // Use React Query to fetch the service data
-  const { data: service, isLoading: serviceLoading, error: serviceError } = useQuery({
-    queryKey: ['service', serviceId],
-    queryFn: () => fetchServiceById(serviceId),
-    enabled: !!serviceId,
-  });
-  
-  const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
-  const [showThankYou, setShowThankYou] = useState(false);
+  const { data: service, isLoading, error } = useService(serviceId);
+  const [formData, setFormData] = useState<BookingFormData | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [bookingComplete, setBookingComplete] = useState(false);
   const [bookingId, setBookingId] = useState<string | null>(null);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [formValues, setFormValues] = useState<BookingFormValues | null>(null);
-
+  const [zipCode, setZipCode] = useState<string>('');
+  
+  useEffect(() => {
+    // Get zip code from URL or localStorage
+    const urlZipCode = searchParams.get('zipCode');
+    const storedZipCode = localStorage.getItem('zipCode');
+    setZipCode(urlZipCode || storedZipCode || '');
+  }, [searchParams]);
+  
   // Handle form submission
-  const onSubmit = (values: BookingFormValues) => {
-    console.log("Form values:", values);
-    setFormValues(values);
-    setIsPaymentModalOpen(true);
+  const handleFormSubmit = (data: BookingFormData) => {
+    setFormData(data);
+    setShowPaymentModal(true);
   };
-
-  // Handle payment completion
-  const handlePaymentCompletion = async () => {
-    if (!service || !formValues) return;
-    
-    setIsPaymentModalOpen(false);
-    setIsPaymentProcessing(true);
+  
+  // Handle payment processing
+  const handlePaymentSuccess = async (paymentMethod: string) => {
+    if (!formData || !service) return;
     
     try {
-      // Save booking to database
-      const createdBookingId = await createBooking({
-        ...formValues,
-        serviceId: service.id,
+      // Create booking data with all required fields
+      const bookingData: BookingData = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        date: formData.date,
+        timeSlot: formData.timeSlot,
+        serviceId: serviceId,
         paymentAmount: service.base_price,
-        zipCode
-      });
+        zipCode: zipCode,
+        notes: formData.notes || ''
+      };
       
-      if (createdBookingId) {
-        setBookingId(createdBookingId);
-        setIsPaymentProcessing(false);
-        setShowThankYou(true);
-        
-        toast.success("Payment successful!", {
-          description: "Your booking has been confirmed.",
-        });
+      const newBookingId = await createBooking(bookingData);
+      
+      if (newBookingId) {
+        setBookingId(newBookingId);
+        setBookingComplete(true);
+        toast.success("Booking confirmed successfully!");
+        setShowPaymentModal(false);
       } else {
-        setIsPaymentProcessing(false);
-        toast.error("Failed to complete booking", {
-          description: "Please try again or contact support.",
-        });
+        toast.error("Failed to create booking. Please try again.");
       }
     } catch (error) {
-      console.error("Error completing booking:", error);
-      setIsPaymentProcessing(false);
-      toast.error("Failed to complete booking", {
-        description: "Please try again or contact support.",
-      });
+      console.error("Error processing booking:", error);
+      toast.error("Payment processing error. Please try again.");
     }
   };
-
+  
+  const handleReturnToServices = () => {
+    navigate('/services');
+  };
+  
+  // Show loading state
+  if (isLoading) return <LoadingState />;
+  
+  // Show error state if service not found
+  if (error || !service) return <ErrorState />;
+  
+  // Show confirmation screen after successful booking
+  if (bookingComplete && bookingId) {
+    return (
+      <BookingConfirmation 
+        bookingId={bookingId}
+        serviceName={service.name}
+        onReturnToServices={handleReturnToServices}
+      />
+    );
+  }
+  
+  // Main booking form page
   return (
-    <div className="flex flex-col min-h-screen">
-      <Navbar />
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-8">Schedule Service</h1>
       
-      <main className="flex-grow py-8">
-        <div className="container mx-auto px-4 max-w-4xl">
-          {/* Loading State */}
-          {serviceLoading && (
-            <LoadingState />
-          )}
-          
-          {/* Error State */}
-          {(serviceError || !service) && !serviceLoading && (
-            <ErrorState />
-          )}
-          
-          {/* Thank You/Confirmation State */}
-          {showThankYou && service && (
-            <BookingConfirmation service={service} bookingId={bookingId} />
-          )}
-          
-          {/* Booking Form State */}
-          {service && !serviceLoading && !showThankYou && (
-            <>
-              <Link to={`/services/${service.slug || service.id}?zip=${zipCode}`} className="text-dwellin-navy hover:underline mb-4 inline-flex items-center">
-                ← Back to Service Details
-              </Link>
-              
-              <h1 className="text-3xl md:text-4xl font-bold mt-4 mb-2">Book Your {service.name}</h1>
-              <p className="text-gray-600 mb-8">{service.description}</p>
-              
-              <div className="grid md:grid-cols-3 gap-8">
-                {/* Booking Form - Takes 2/3 of the width on desktop */}
-                <div className="md:col-span-2">
-                  <BookingForm 
-                    onSubmit={onSubmit} 
-                    isPaymentProcessing={isPaymentProcessing}
-                  />
-                </div>
-                
-                {/* Order Summary - Takes 1/3 of the width on desktop */}
-                <div>
-                  <OrderSummary 
-                    service={service}
-                    onPayClick={() => formValues ? setIsPaymentModalOpen(true) : null}
-                    isPaymentProcessing={isPaymentProcessing}
-                  />
-                </div>
-              </div>
-              
-              {/* Payment Modal */}
-              <PaymentModal 
-                isOpen={isPaymentModalOpen} 
-                onOpenChange={setIsPaymentModalOpen} 
-                onPaymentComplete={handlePaymentCompletion}
-              />
-            </>
-          )}
+      <div className="grid md:grid-cols-3 gap-8">
+        {/* Left column: Booking form */}
+        <div className="md:col-span-2">
+          <BookingForm onSubmit={handleFormSubmit} />
         </div>
-      </main>
+        
+        {/* Right column: Order summary */}
+        <div>
+          <OrderSummary
+            serviceName={service.name}
+            servicePrice={service.base_price}
+            serviceDetails={service.description}
+          />
+        </div>
+      </div>
       
-      <Footer />
+      {/* Payment modal */}
+      <PaymentModal
+        open={showPaymentModal}
+        onOpenChange={setShowPaymentModal}
+        onPaymentSuccess={handlePaymentSuccess}
+        serviceName={service.name}
+        amount={service.base_price}
+      />
     </div>
   );
 };
