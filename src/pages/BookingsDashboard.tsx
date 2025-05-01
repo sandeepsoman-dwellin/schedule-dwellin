@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useBookings } from '@/hooks/bookings/useBookings';
@@ -37,6 +36,8 @@ const BookingsDashboard: React.FC = () => {
   // Check for verified phone on mount
   useEffect(() => {
     const verifiedPhone = localStorage.getItem("verifiedPhone");
+    console.log("Checking for verified phone:", verifiedPhone);
+    
     if (verifiedPhone) {
       setIsVerified(true);
     } else {
@@ -46,6 +47,7 @@ const BookingsDashboard: React.FC = () => {
   }, []);
   
   const handleVerificationComplete = (phone: string) => {
+    console.log("Verification completed in dashboard with phone:", phone);
     localStorage.setItem("verifiedPhone", phone);
     setIsVerified(true);
     setIsVerificationOpen(false);
@@ -54,7 +56,8 @@ const BookingsDashboard: React.FC = () => {
   // If not verified and dialog is closed, redirect to home
   useEffect(() => {
     if (!isVerified && !isVerificationOpen) {
-      navigate('/');
+      console.log("Not verified and dialog closed, redirecting to home");
+      navigate('/', { replace: true });
     }
   }, [isVerified, isVerificationOpen, navigate]);
   
@@ -98,7 +101,7 @@ const BookingsDashboard: React.FC = () => {
           onOpenChange={(open) => {
             setIsVerificationOpen(open);
             if (!open && !isVerified) {
-              navigate('/');
+              navigate('/', { replace: true });
             }
           }}
           onVerificationComplete={handleVerificationComplete}

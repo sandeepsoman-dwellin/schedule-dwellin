@@ -11,10 +11,9 @@ const Navbar = () => {
   const navigate = useNavigate();
   
   const handleVerificationComplete = (phone: string) => {
-    // Store the verified phone number in localStorage
-    localStorage.setItem("verifiedPhone", phone);
+    console.log("Verification complete, navigating to bookings page");
     // Navigate to bookings dashboard
-    navigate("/bookings");
+    navigate("/bookings", { replace: true });
     // Close the verification dialog
     setIsVerificationOpen(false);
   };

@@ -46,6 +46,9 @@ const PhoneVerification = ({ isOpen, onOpenChange, onVerificationComplete }: Pho
     setTimeout(() => {
       if (verificationCode === "1234") {
         toast.success("Phone verified successfully!");
+        // Store the verified phone in localStorage before calling onVerificationComplete
+        localStorage.setItem("verifiedPhone", phone);
+        // Then call onVerificationComplete to trigger navigation
         onVerificationComplete(phone);
         // Reset the form state for next use
         setPhone("");
