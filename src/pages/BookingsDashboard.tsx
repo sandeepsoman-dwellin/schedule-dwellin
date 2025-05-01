@@ -2,18 +2,35 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useBookings } from '@/hooks/bookings/useBookings';
-import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import LoadingState from '@/components/booking/LoadingState';
 import ErrorState from '@/components/booking/ErrorState';
 import PhoneVerification from '@/components/booking/PhoneVerification';
+import RescheduleDialog from '@/components/booking/RescheduleDialog';
+import CancelBookingDialog from '@/components/booking/CancelBookingDialog';
+import BookingsList from '@/components/booking/BookingsList';
+import CreditsDisplay from '@/components/booking/CreditsDisplay';
+import { rescheduleBooking, cancelBooking, getAvailableTimeSlots } from '@/hooks/bookings/bookingApi';
+import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Booking } from '@/hooks/bookings/useBookings';
 
 const BookingsDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [isVerified, setIsVerified] = useState(false);
   const [isVerificationOpen, setIsVerificationOpen] = useState(false);
-  const { data, isLoading, error } = useBookings();
+  const { data, isLoading, error, refetch } = useBookings();
+  
+  // Available credits (in a real app, this would be fetched from the API)
+  const [availableCredits] = useState<number>(25.00);
+  
+  // Reschedule and cancel state
+  const [isRescheduleDialogOpen, setIsRescheduleDialogOpen] = useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [cancelBookingId, setCancelBookingId] = useState<string | null>(null);
+  const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([]);
   
   // Check for verified phone on mount
   useEffect(() => {
@@ -38,6 +55,38 @@ const BookingsDashboard: React.FC = () => {
       navigate('/');
     }
   }, [isVerified, isVerificationOpen, navigate]);
+  
+  // Handle reschedule
+  const handleReschedule = (booking: Booking) => {
+    setSelectedBooking(booking);
+    // Fetch available time slots for the selected date
+    const fetchTimeSlots = async () => {
+      const slots = await getAvailableTimeSlots(new Date(booking.booking_date));
+      setAvailableTimeSlots(slots);
+    };
+    fetchTimeSlots();
+    setIsRescheduleDialogOpen(true);
+  };
+  
+  const handleRescheduleConfirm = async (bookingId: string, date: Date, timeSlot: string) => {
+    const success = await rescheduleBooking(bookingId, date, timeSlot);
+    if (success) {
+      refetch();
+    }
+  };
+  
+  // Handle cancel
+  const handleCancel = (bookingId: string) => {
+    setCancelBookingId(bookingId);
+    setIsCancelDialogOpen(true);
+  };
+  
+  const handleCancelConfirm = async (bookingId: string) => {
+    const success = await cancelBooking(bookingId);
+    if (success) {
+      refetch();
+    }
+  };
   
   if (!isVerified) {
     return (
@@ -76,6 +125,26 @@ const BookingsDashboard: React.FC = () => {
     ? bookings.filter(booking => booking.customer_phone === verifiedPhone)
     : bookings;
   
+  // Separate upcoming and past bookings
+  const currentDate = new Date();
+  const upcomingBookings = filteredBookings.filter(booking => {
+    const bookingDate = new Date(booking.booking_date);
+    return bookingDate >= currentDate || (
+      bookingDate.getDate() === currentDate.getDate() && 
+      bookingDate.getMonth() === currentDate.getMonth() && 
+      bookingDate.getFullYear() === currentDate.getFullYear()
+    );
+  });
+  
+  const pastBookings = filteredBookings.filter(booking => {
+    const bookingDate = new Date(booking.booking_date);
+    return bookingDate < currentDate && !(
+      bookingDate.getDate() === currentDate.getDate() && 
+      bookingDate.getMonth() === currentDate.getMonth() && 
+      bookingDate.getFullYear() === currentDate.getFullYear()
+    );
+  });
+  
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
@@ -83,6 +152,11 @@ const BookingsDashboard: React.FC = () => {
         <Link to="/services">
           <Button>Book New Service</Button>
         </Link>
+      </div>
+      
+      {/* Credits Display */}
+      <div className="mb-8">
+        <CreditsDisplay availableCredits={availableCredits} />
       </div>
       
       {filteredBookings.length === 0 ? (
@@ -94,36 +168,49 @@ const BookingsDashboard: React.FC = () => {
           </Link>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredBookings.map((booking) => (
-            <Link to={`/bookings/${booking.id}`} key={booking.id}>
-              <Card className="p-6 hover:shadow-lg transition-shadow">
-                <h3 className="text-xl font-bold mb-2">
-                  {booking.service?.name || "Service"}
-                </h3>
-                <p className="text-gray-700 mb-1">
-                  <span className="font-medium">Date:</span> {format(new Date(booking.booking_date), 'PPP')}
-                </p>
-                <p className="text-gray-700 mb-1">
-                  <span className="font-medium">Time:</span> {booking.time_slot}
-                </p>
-                <p className="text-gray-700 mb-1">
-                  <span className="font-medium">Status:</span> 
-                  <span className={`ml-1 ${
-                    booking.status === 'confirmed' ? 'text-green-600' : 
-                    booking.status === 'cancelled' ? 'text-red-600' : 'text-yellow-600'
-                  }`}>
-                    {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                  </span>
-                </p>
-                <p className="text-xs text-gray-500 mt-4">
-                  Booking ID: {booking.id}
-                </p>
-              </Card>
-            </Link>
-          ))}
-        </div>
+        <Tabs defaultValue="upcoming" className="w-full">
+          <TabsList className="mb-6">
+            <TabsTrigger value="upcoming">Upcoming Appointments</TabsTrigger>
+            <TabsTrigger value="history">Booking History</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="upcoming">
+            <h2 className="text-xl font-semibold mb-4">Upcoming Appointments</h2>
+            <BookingsList 
+              bookings={upcomingBookings}
+              onReschedule={handleReschedule}
+              onCancel={handleCancel}
+            />
+          </TabsContent>
+          
+          <TabsContent value="history">
+            <h2 className="text-xl font-semibold mb-4">Booking History</h2>
+            <BookingsList 
+              bookings={pastBookings}
+              onReschedule={handleReschedule}
+              onCancel={handleCancel}
+              isPastBookings={true}
+            />
+          </TabsContent>
+        </Tabs>
       )}
+      
+      {/* Reschedule Dialog */}
+      <RescheduleDialog 
+        isOpen={isRescheduleDialogOpen}
+        onClose={() => setIsRescheduleDialogOpen(false)}
+        booking={selectedBooking}
+        onReschedule={handleRescheduleConfirm}
+        availableTimeSlots={availableTimeSlots}
+      />
+      
+      {/* Cancel Dialog */}
+      <CancelBookingDialog 
+        isOpen={isCancelDialogOpen}
+        onClose={() => setIsCancelDialogOpen(false)}
+        onConfirm={handleCancelConfirm}
+        bookingId={cancelBookingId}
+      />
     </div>
   );
 };

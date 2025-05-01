@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -112,5 +111,84 @@ export const getBookingById = async (id: string) => {
     console.error('Exception in getBookingById:', error);
     toast.error('An unexpected error occurred');
     return null;
+  }
+};
+
+export const rescheduleBooking = async (
+  bookingId: string, 
+  newDate: Date, 
+  newTimeSlot: string
+): Promise<boolean> => {
+  try {
+    const formattedDate = newDate.toISOString().split('T')[0];
+    
+    const { data, error } = await supabase
+      .from('bookings')
+      .update({
+        booking_date: formattedDate,
+        time_slot: newTimeSlot,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', bookingId);
+    
+    if (error) {
+      console.error('Error rescheduling booking:', error);
+      toast.error('Failed to reschedule appointment');
+      return false;
+    }
+    
+    console.log('Booking rescheduled successfully:', data);
+    toast.success('Appointment rescheduled successfully');
+    return true;
+  } catch (error) {
+    console.error('Exception in rescheduleBooking:', error);
+    toast.error('An unexpected error occurred');
+    return false;
+  }
+};
+
+export const cancelBooking = async (bookingId: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase
+      .from('bookings')
+      .update({
+        status: 'cancelled',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', bookingId);
+    
+    if (error) {
+      console.error('Error cancelling booking:', error);
+      toast.error('Failed to cancel appointment');
+      return false;
+    }
+    
+    console.log('Booking cancelled successfully:', data);
+    toast.success('Appointment cancelled successfully');
+    return true;
+  } catch (error) {
+    console.error('Exception in cancelBooking:', error);
+    toast.error('An unexpected error occurred');
+    return false;
+  }
+};
+
+export const getAvailableTimeSlots = async (date: Date): Promise<string[]> => {
+  try {
+    const formattedDate = date.toISOString().split('T')[0];
+    
+    // In a real app, this would fetch from time_slot_availability table
+    // For now, returning a static list of time slots
+    const defaultTimeSlots = [
+      '9:00 AM - 11:00 AM',
+      '11:00 AM - 1:00 PM',
+      '1:00 PM - 3:00 PM',
+      '3:00 PM - 5:00 PM'
+    ];
+    
+    return defaultTimeSlots;
+  } catch (error) {
+    console.error('Exception in getAvailableTimeSlots:', error);
+    return [];
   }
 };
