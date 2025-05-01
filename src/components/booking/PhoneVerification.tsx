@@ -47,7 +47,10 @@ const PhoneVerification = ({ isOpen, onOpenChange, onVerificationComplete }: Pho
       if (verificationCode === "1234") {
         toast.success("Phone verified successfully!");
         onVerificationComplete(phone);
-        onOpenChange(false);
+        // Reset the form state for next use
+        setPhone("");
+        setVerificationCode("");
+        setCodeSent(false);
       } else {
         toast.error("Invalid verification code");
       }

@@ -15,6 +15,8 @@ import { rescheduleBooking, cancelBooking, getAvailableTimeSlots } from '@/hooks
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Booking } from '@/hooks/bookings/useBookings';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 
 const BookingsDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -146,71 +148,77 @@ const BookingsDashboard: React.FC = () => {
   });
   
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Your Bookings</h1>
-        <Link to="/services">
-          <Button>Book New Service</Button>
-        </Link>
-      </div>
-      
-      {/* Credits Display */}
-      <div className="mb-8">
-        <CreditsDisplay availableCredits={availableCredits} />
-      </div>
-      
-      {filteredBookings.length === 0 ? (
-        <Card className="p-8 text-center">
-          <h2 className="text-xl font-semibold mb-4">No bookings found</h2>
-          <p className="mb-4">You haven't made any bookings yet for this phone number.</p>
-          <Link to="/services">
-            <Button>Browse Services</Button>
-          </Link>
-        </Card>
-      ) : (
-        <Tabs defaultValue="upcoming" className="w-full">
-          <TabsList className="mb-6">
-            <TabsTrigger value="upcoming">Upcoming Appointments</TabsTrigger>
-            <TabsTrigger value="history">Booking History</TabsTrigger>
-          </TabsList>
+    <div className="flex flex-col min-h-screen">
+      <Navbar />
+      <main className="flex-grow">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold">Your Bookings</h1>
+            <Link to="/services">
+              <Button>Book New Service</Button>
+            </Link>
+          </div>
           
-          <TabsContent value="upcoming">
-            <h2 className="text-xl font-semibold mb-4">Upcoming Appointments</h2>
-            <BookingsList 
-              bookings={upcomingBookings}
-              onReschedule={handleReschedule}
-              onCancel={handleCancel}
-            />
-          </TabsContent>
+          {/* Credits Display */}
+          <div className="mb-8">
+            <CreditsDisplay availableCredits={availableCredits} />
+          </div>
           
-          <TabsContent value="history">
-            <h2 className="text-xl font-semibold mb-4">Booking History</h2>
-            <BookingsList 
-              bookings={pastBookings}
-              onReschedule={handleReschedule}
-              onCancel={handleCancel}
-              isPastBookings={true}
-            />
-          </TabsContent>
-        </Tabs>
-      )}
-      
-      {/* Reschedule Dialog */}
-      <RescheduleDialog 
-        isOpen={isRescheduleDialogOpen}
-        onClose={() => setIsRescheduleDialogOpen(false)}
-        booking={selectedBooking}
-        onReschedule={handleRescheduleConfirm}
-        availableTimeSlots={availableTimeSlots}
-      />
-      
-      {/* Cancel Dialog */}
-      <CancelBookingDialog 
-        isOpen={isCancelDialogOpen}
-        onClose={() => setIsCancelDialogOpen(false)}
-        onConfirm={handleCancelConfirm}
-        bookingId={cancelBookingId}
-      />
+          {filteredBookings.length === 0 ? (
+            <Card className="p-8 text-center">
+              <h2 className="text-xl font-semibold mb-4">No bookings found</h2>
+              <p className="mb-4">You haven't made any bookings yet for this phone number.</p>
+              <Link to="/services">
+                <Button>Browse Services</Button>
+              </Link>
+            </Card>
+          ) : (
+            <Tabs defaultValue="upcoming" className="w-full">
+              <TabsList className="mb-6">
+                <TabsTrigger value="upcoming">Upcoming Appointments</TabsTrigger>
+                <TabsTrigger value="history">Booking History</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="upcoming">
+                <h2 className="text-xl font-semibold mb-4">Upcoming Appointments</h2>
+                <BookingsList 
+                  bookings={upcomingBookings}
+                  onReschedule={handleReschedule}
+                  onCancel={handleCancel}
+                />
+              </TabsContent>
+              
+              <TabsContent value="history">
+                <h2 className="text-xl font-semibold mb-4">Booking History</h2>
+                <BookingsList 
+                  bookings={pastBookings}
+                  onReschedule={handleReschedule}
+                  onCancel={handleCancel}
+                  isPastBookings={true}
+                />
+              </TabsContent>
+            </Tabs>
+          )}
+          
+          {/* Reschedule Dialog */}
+          <RescheduleDialog 
+            isOpen={isRescheduleDialogOpen}
+            onClose={() => setIsRescheduleDialogOpen(false)}
+            booking={selectedBooking}
+            onReschedule={handleRescheduleConfirm}
+            availableTimeSlots={availableTimeSlots}
+          />
+          
+          {/* Cancel Dialog */}
+          <CancelBookingDialog 
+            isOpen={isCancelDialogOpen}
+            onClose={() => setIsCancelDialogOpen(false)}
+            onConfirm={handleCancelConfirm}
+            bookingId={cancelBookingId}
+          />
+        </div>
+      </main>
+      <Footer />
     </div>
   );
 };

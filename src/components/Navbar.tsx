@@ -15,6 +15,8 @@ const Navbar = () => {
     localStorage.setItem("verifiedPhone", phone);
     // Navigate to bookings dashboard
     navigate("/bookings");
+    // Close the verification dialog
+    setIsVerificationOpen(false);
   };
   
   return (
