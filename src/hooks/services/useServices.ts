@@ -1,7 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Service } from "./types";
-import { fetchServices, seedSampleData, fetchServiceDetails, fetchServiceById } from "./serviceApi";
+import { fetchServices, fetchServiceDetails, fetchServiceById, seedSampleData } from "./api";
 
 export const useServices = (zipCode?: string) => {
   return useQuery({

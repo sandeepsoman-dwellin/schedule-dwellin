@@ -13,7 +13,14 @@ export type BookingFormData = {
   zipCode?: string;
 };
 
-export type BookingData = BookingFormData & {
+export type BookingData = {
+  name: string;
+  email: string;
+  phone: string;
+  date: Date;
+  timeSlot: string;
+  notes?: string;
+  zipCode?: string;
   serviceId: string;
   paymentAmount: number;
 };
