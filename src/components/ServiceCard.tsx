@@ -26,7 +26,7 @@ const ServiceCard = ({ service, zipCode }: ServiceCardProps) => {
         </div>
         
         <div className="mt-auto pt-4 border-t border-gray-100">
-          <Link to={`/booking?serviceId=${service.id}&zipCode=${zipCode}`}>
+          <Link to={`/services/${service.id}?zip=${zipCode}`}>
             <Button className="w-full bg-dwellin-sky hover:bg-opacity-90 text-white">
               <span>Book Now</span>
               <ArrowRight className="ml-2 h-4 w-4" />
