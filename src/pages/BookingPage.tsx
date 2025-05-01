@@ -1,16 +1,16 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useService } from '@/hooks/services';
-import BookingForm from '@/components/booking/BookingForm';
-import OrderSummary from '@/components/booking/OrderSummary';
+import BookingLayout from '@/components/booking/BookingLayout';
 import PaymentModal from '@/components/booking/PaymentModal';
 import BookingConfirmation from '@/components/booking/BookingConfirmation';
 import LoadingState from '@/components/booking/LoadingState';
 import ErrorState from '@/components/booking/ErrorState';
 import AddressDialog from '@/components/booking/AddressDialog';
-import { BookingFormData, BookingData, createBooking } from '@/hooks/bookings/bookingApi';
-import { toast } from "sonner";
+import AddressSection from '@/components/booking/AddressSection';
+import { useAddressManagement } from '@/hooks/bookings/useAddressManagement';
+import { useBookingProcess } from '@/hooks/bookings/useBookingProcess';
 
 const BookingPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -18,119 +18,26 @@ const BookingPage: React.FC = () => {
   const serviceId = searchParams.get('serviceId') || '';
   
   const { data: service, isLoading, error } = useService(serviceId);
-  const [formData, setFormData] = useState<BookingFormData | null>(null);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [bookingComplete, setBookingComplete] = useState(false);
-  const [bookingId, setBookingId] = useState<string | null>(null);
-  const [zipCode, setZipCode] = useState<string>('');
-  const [fullAddress, setFullAddress] = useState<string>('');
-  const [showAddressDialog, setShowAddressDialog] = useState(false);
-  const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
   
-  // Check for address data from sessionStorage
-  useEffect(() => {
-    // First check sessionStorage
-    const storedZipCode = sessionStorage.getItem('zipCode');
-    const storedAddress = sessionStorage.getItem('customerAddress');
-    
-    console.log("Retrieved from sessionStorage - zipCode:", storedZipCode, "address:", storedAddress);
-    
-    // Then check URL parameters or localStorage as fallback
-    const urlZipCode = searchParams.get('zipCode');
-    const localZipCode = localStorage.getItem('zipCode');
-    const localAddress = localStorage.getItem('customerAddress');
-    
-    if (storedZipCode && storedAddress) {
-      // Use sessionStorage values (highest priority)
-      setZipCode(storedZipCode);
-      setFullAddress(storedAddress);
-      console.log("Using session storage address:", storedAddress);
-    } else if (urlZipCode) {
-      // Use URL zipCode, potentially showing dialog for full address
-      setZipCode(urlZipCode);
-      
-      // If we find address in localStorage, use it and save to sessionStorage
-      if (localAddress) {
-        setFullAddress(localAddress);
-        sessionStorage.setItem('customerAddress', localAddress);
-        sessionStorage.setItem('zipCode', urlZipCode);
-        console.log("Using localStorage address:", localAddress);
-      } else {
-        // Need to collect full address
-        setShowAddressDialog(true);
-      }
-    } else if (localZipCode && localAddress) {
-      // Use localStorage values as last resort
-      setZipCode(localZipCode);
-      setFullAddress(localAddress);
-      // Save to sessionStorage for future use
-      sessionStorage.setItem('customerAddress', localAddress);
-      sessionStorage.setItem('zipCode', localZipCode);
-      console.log("Using localStorage fallback address:", localAddress);
-    } else {
-      // No address information available, show dialog
-      setShowAddressDialog(true);
-    }
-  }, [searchParams]);
+  // Use our custom hooks to manage address and booking process
+  const {
+    zipCode,
+    fullAddress,
+    showAddressDialog,
+    setShowAddressDialog,
+    handleAddressSelect
+  } = useAddressManagement();
   
-  // Handle address selection from dialog
-  const handleAddressSelect = (address: string, newZipCode: string) => {
-    console.log("Address selected:", address, "ZIP:", newZipCode);
-    setFullAddress(address);
-    setZipCode(newZipCode);
-    
-    // Save to both localStorage and sessionStorage for future use
-    localStorage.setItem('customerAddress', address);
-    localStorage.setItem('zipCode', newZipCode);
-    sessionStorage.setItem('customerAddress', address);
-    sessionStorage.setItem('zipCode', newZipCode);
-  };
-  
-  // Handle form submission
-  const handleFormSubmit = (data: BookingFormData) => {
-    setFormData(data);
-    setShowPaymentModal(true);
-  };
-  
-  // Handle payment processing
-  const handlePaymentSuccess = async () => {
-    if (!formData || !service) return;
-    
-    try {
-      setIsPaymentProcessing(true);
-      
-      // Create booking data with all required fields
-      const bookingData: BookingData = {
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        date: formData.date,
-        timeSlot: formData.timeSlot,
-        serviceId: serviceId,
-        paymentAmount: service.base_price,
-        zipCode: zipCode,
-        address: fullAddress, // Include the full address
-        notes: formData.notes || ''
-      };
-      
-      console.log("Sending booking data:", bookingData);
-      const newBookingId = await createBooking(bookingData);
-      
-      if (newBookingId) {
-        setBookingId(newBookingId);
-        setBookingComplete(true);
-        toast.success("Booking confirmed successfully!");
-        setShowPaymentModal(false);
-      } else {
-        toast.error("Failed to create booking. Please try again.");
-      }
-    } catch (error) {
-      console.error("Error processing booking:", error);
-      toast.error("Payment processing error. Please try again.");
-    } finally {
-      setIsPaymentProcessing(false);
-    }
-  };
+  const {
+    formData,
+    showPaymentModal,
+    setShowPaymentModal,
+    bookingComplete,
+    bookingId,
+    isPaymentProcessing,
+    handleFormSubmit,
+    handlePaymentSuccess
+  } = useBookingProcess(serviceId, service, zipCode, fullAddress);
   
   const handleReturnToServices = () => {
     navigate('/services');
@@ -158,45 +65,16 @@ const BookingPage: React.FC = () => {
       <h1 className="text-3xl font-bold mb-8">Schedule Service</h1>
       
       {/* Show address for confirmation */}
-      {fullAddress && (
-        <div className="bg-gray-50 rounded-md p-4 mb-6 border border-gray-200">
-          <h3 className="text-lg font-medium mb-2">Service Address</h3>
-          <p className="text-gray-700">{fullAddress}</p>
-          <button 
-            onClick={() => setShowAddressDialog(true)}
-            className="text-dwellin-sky text-sm font-medium mt-2 hover:text-dwellin-navy"
-          >
-            Change Address
-          </button>
-        </div>
-      )}
+      <AddressSection 
+        fullAddress={fullAddress}
+        setShowAddressDialog={setShowAddressDialog}
+      />
       
-      <div className="grid md:grid-cols-3 gap-8">
-        {/* Left column: Booking form */}
-        <div className="md:col-span-2">
-          <BookingForm 
-            onSubmit={handleFormSubmit} 
-            isPaymentProcessing={isPaymentProcessing} 
-          />
-        </div>
-        
-        {/* Right column: Order summary */}
-        <div>
-          <OrderSummary
-            service={service}
-            onPayClick={() => {
-              // Form validation is handled within BookingForm component
-              const bookingForm = document.querySelector('form');
-              if (bookingForm) {
-                bookingForm.dispatchEvent(
-                  new Event('submit', { cancelable: true, bubbles: true })
-                );
-              }
-            }}
-            isPaymentProcessing={isPaymentProcessing}
-          />
-        </div>
-      </div>
+      <BookingLayout 
+        service={service}
+        onFormSubmit={handleFormSubmit}
+        isPaymentProcessing={isPaymentProcessing}
+      />
       
       {/* Address dialog */}
       <AddressDialog
