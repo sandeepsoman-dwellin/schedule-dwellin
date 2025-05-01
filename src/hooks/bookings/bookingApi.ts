@@ -22,7 +22,7 @@ export interface BookingData {
   serviceId: string;
   paymentAmount: number;
   zipCode: string;
-  address?: string;  // Add the address field
+  address?: string;  // Ensure address is in the interface
   notes?: string;
 }
 
