@@ -44,6 +44,13 @@ const AddressInput = ({ onAddressSelect }: AddressInputProps) => {
             // Update the address field to include the ZIP code
             let formattedAddress = place.formatted_address || "";
             
+            // Ensure ZIP code is included in the address display
+            if (!formattedAddress.includes(extractedZipCode)) {
+              formattedAddress += ` ${extractedZipCode}`;
+            }
+            
+            console.log("Formatted address with ZIP:", formattedAddress);
+            
             // Set both the complete address and extracted zipcode
             setAddress(formattedAddress);
             setZipCode(extractedZipCode);
@@ -95,6 +102,11 @@ const AddressInput = ({ onAddressSelect }: AddressInputProps) => {
       toast.error("Please enter a valid 5-digit ZIP code");
       setIsLoading(false);
       return;
+    }
+
+    // Ensure ZIP code is included in the displayed address
+    if (!selectedAddress.includes(selectedZipCode)) {
+      selectedAddress += ` ${selectedZipCode}`;
     }
 
     // Save address to sessionStorage

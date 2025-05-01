@@ -13,13 +13,22 @@ interface PaymentModalProps {
 
 const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onOpenChange, onPaymentComplete }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   const handlePaymentConfirm = () => {
     setIsLoading(true);
+    setError(null);
+    
     // Simulate a slight delay for UX purposes
     setTimeout(() => {
-      onPaymentComplete();
-      setIsLoading(false);
+      try {
+        onPaymentComplete();
+      } catch (err) {
+        console.error("Payment processing error:", err);
+        setError("An error occurred while processing payment. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
     }, 1000);
   };
   
@@ -33,6 +42,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onOpenChange, onPay
         </DialogHeader>
         
         <div className="py-4 space-y-4">
+          {/* Show error message if any */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-md">
+              {error}
+            </div>
+          )}
+          
           {/* Mock Credit Card Form */}
           <div className="space-y-4">
             <div>

@@ -33,6 +33,8 @@ const BookingPage: React.FC = () => {
     const storedZipCode = sessionStorage.getItem('zipCode');
     const storedAddress = sessionStorage.getItem('customerAddress');
     
+    console.log("Retrieved from sessionStorage - zipCode:", storedZipCode, "address:", storedAddress);
+    
     // Then check URL parameters or localStorage as fallback
     const urlZipCode = searchParams.get('zipCode');
     const localZipCode = localStorage.getItem('zipCode');
@@ -42,6 +44,7 @@ const BookingPage: React.FC = () => {
       // Use sessionStorage values (highest priority)
       setZipCode(storedZipCode);
       setFullAddress(storedAddress);
+      console.log("Using session storage address:", storedAddress);
     } else if (urlZipCode) {
       // Use URL zipCode, potentially showing dialog for full address
       setZipCode(urlZipCode);
@@ -51,6 +54,7 @@ const BookingPage: React.FC = () => {
         setFullAddress(localAddress);
         sessionStorage.setItem('customerAddress', localAddress);
         sessionStorage.setItem('zipCode', urlZipCode);
+        console.log("Using localStorage address:", localAddress);
       } else {
         // Need to collect full address
         setShowAddressDialog(true);
@@ -62,6 +66,7 @@ const BookingPage: React.FC = () => {
       // Save to sessionStorage for future use
       sessionStorage.setItem('customerAddress', localAddress);
       sessionStorage.setItem('zipCode', localZipCode);
+      console.log("Using localStorage fallback address:", localAddress);
     } else {
       // No address information available, show dialog
       setShowAddressDialog(true);
@@ -70,6 +75,7 @@ const BookingPage: React.FC = () => {
   
   // Handle address selection from dialog
   const handleAddressSelect = (address: string, newZipCode: string) => {
+    console.log("Address selected:", address, "ZIP:", newZipCode);
     setFullAddress(address);
     setZipCode(newZipCode);
     

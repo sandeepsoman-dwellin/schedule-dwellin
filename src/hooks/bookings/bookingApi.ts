@@ -45,6 +45,11 @@ export const createBooking = async (bookingData: BookingData): Promise<string | 
       address: bookingData.address || null
     });
     
+    // Ensure address is provided and valid
+    if (!bookingData.address) {
+      console.warn("No address provided for booking");
+    }
+    
     // Prepare the booking data for inserting into the database
     const { data, error } = await supabase
       .from('bookings')
@@ -67,7 +72,7 @@ export const createBooking = async (bookingData: BookingData): Promise<string | 
 
     if (error) {
       console.error('Error creating booking:', error);
-      toast.error('Failed to create booking');
+      toast.error('Failed to create booking: ' + error.message);
       return null;
     }
 
