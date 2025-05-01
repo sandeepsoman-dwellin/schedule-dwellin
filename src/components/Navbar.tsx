@@ -1,11 +1,21 @@
 
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
+import PhoneVerification from "@/components/booking/PhoneVerification";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isVerificationOpen, setIsVerificationOpen] = useState(false);
+  const navigate = useNavigate();
+  
+  const handleVerificationComplete = (phone: string) => {
+    // Store the verified phone number in localStorage
+    localStorage.setItem("verifiedPhone", phone);
+    // Navigate to bookings dashboard
+    navigate("/bookings");
+  };
   
   return (
     <header className="py-6 border-b border-gray-100 bg-white">
@@ -27,7 +37,13 @@ const Navbar = () => {
         <nav className="hidden md:flex items-center space-x-8">
           <Link to="/services" className="text-gray-600 hover:text-dwellin-navy">Services</Link>
           <Link to="/" className="text-gray-600 hover:text-dwellin-navy">How It Works</Link>
-          <Link to="/" className="text-gray-600 hover:text-dwellin-navy">Sign In</Link>
+          <Button 
+            variant="ghost"
+            className="text-gray-600 hover:text-dwellin-navy"
+            onClick={() => setIsVerificationOpen(true)}
+          >
+            My Bookings
+          </Button>
           <Button className="bg-dwellin-sky hover:bg-opacity-90 text-white">Get Started</Button>
         </nav>
         
@@ -62,13 +78,15 @@ const Navbar = () => {
             >
               How It Works
             </Link>
-            <Link 
-              to="/" 
-              className="py-2 px-4 text-gray-600 hover:bg-gray-100 rounded-md"
-              onClick={() => setIsMenuOpen(false)}
+            <button 
+              className="py-2 px-4 text-left text-gray-600 hover:bg-gray-100 rounded-md"
+              onClick={() => {
+                setIsMenuOpen(false);
+                setIsVerificationOpen(true);
+              }}
             >
-              Sign In
-            </Link>
+              My Bookings
+            </button>
             <Link to="/">
               <Button 
                 className="w-full bg-dwellin-sky hover:bg-opacity-90 text-white"
@@ -80,6 +98,13 @@ const Navbar = () => {
           </nav>
         </div>
       )}
+      
+      {/* Phone verification dialog */}
+      <PhoneVerification 
+        isOpen={isVerificationOpen}
+        onOpenChange={setIsVerificationOpen}
+        onVerificationComplete={handleVerificationComplete}
+      />
     </header>
   );
 };

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -53,6 +53,9 @@ interface BookingFormProps {
 }
 
 const BookingForm: React.FC<BookingFormProps> = ({ onSubmit, isPaymentProcessing }) => {
+  // State to control the date picker popover
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  
   // Initialize the form
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
@@ -140,7 +143,7 @@ const BookingForm: React.FC<BookingFormProps> = ({ onSubmit, isPaymentProcessing
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Service Date</FormLabel>
-                <Popover>
+                <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                   <PopoverTrigger asChild>
                     <FormControl>
                       <Button
@@ -162,7 +165,10 @@ const BookingForm: React.FC<BookingFormProps> = ({ onSubmit, isPaymentProcessing
                     <Calendar
                       mode="single"
                       selected={field.value}
-                      onSelect={field.onChange}
+                      onSelect={(date) => {
+                        field.onChange(date);
+                        setIsCalendarOpen(false); // Close calendar after selection
+                      }}
                       disabled={(date) => {
                         // Disable dates before the earliest available date
                         // Also disable weekends

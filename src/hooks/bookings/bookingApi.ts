@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -13,17 +12,18 @@ export type BookingFormData = {
   zipCode?: string;
 };
 
-export type BookingData = {
+export interface BookingData {
   name: string;
   email: string;
   phone: string;
   date: Date;
   timeSlot: string;
-  notes?: string;
-  zipCode?: string;
   serviceId: string;
   paymentAmount: number;
-};
+  zipCode: string;
+  address?: string;  // Add the address field
+  notes?: string;
+}
 
 // Create a new booking in the database
 export const createBooking = async (bookingData: BookingData): Promise<string | null> => {

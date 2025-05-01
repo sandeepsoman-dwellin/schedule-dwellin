@@ -8,6 +8,7 @@ import PaymentModal from '@/components/booking/PaymentModal';
 import BookingConfirmation from '@/components/booking/BookingConfirmation';
 import LoadingState from '@/components/booking/LoadingState';
 import ErrorState from '@/components/booking/ErrorState';
+import AddressDialog from '@/components/booking/AddressDialog';
 import { BookingFormData, BookingData, createBooking } from '@/hooks/bookings/bookingApi';
 import { toast } from "sonner";
 
@@ -22,13 +23,42 @@ const BookingPage: React.FC = () => {
   const [bookingComplete, setBookingComplete] = useState(false);
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [zipCode, setZipCode] = useState<string>('');
+  const [fullAddress, setFullAddress] = useState<string>('');
+  const [showAddressDialog, setShowAddressDialog] = useState(false);
   
+  // Check for address data
   useEffect(() => {
     // Get zip code from URL or localStorage
     const urlZipCode = searchParams.get('zipCode');
     const storedZipCode = localStorage.getItem('zipCode');
-    setZipCode(urlZipCode || storedZipCode || '');
+    const storedAddress = localStorage.getItem('customerAddress');
+    
+    if (urlZipCode) {
+      setZipCode(urlZipCode);
+      // If we only have zipCode but no full address, prompt for address
+      if (!storedAddress) {
+        setShowAddressDialog(true);
+      } else {
+        setFullAddress(storedAddress);
+      }
+    } else if (storedZipCode && storedAddress) {
+      setZipCode(storedZipCode);
+      setFullAddress(storedAddress);
+    } else {
+      // No address information available, show dialog
+      setShowAddressDialog(true);
+    }
   }, [searchParams]);
+  
+  // Handle address selection from dialog
+  const handleAddressSelect = (address: string, newZipCode: string) => {
+    setFullAddress(address);
+    setZipCode(newZipCode);
+    
+    // Save to localStorage for future use
+    localStorage.setItem('customerAddress', address);
+    localStorage.setItem('zipCode', newZipCode);
+  };
   
   // Handle form submission
   const handleFormSubmit = (data: BookingFormData) => {
@@ -51,6 +81,7 @@ const BookingPage: React.FC = () => {
         serviceId: serviceId,
         paymentAmount: service.base_price,
         zipCode: zipCode,
+        address: fullAddress, // Include the full address
         notes: formData.notes || ''
       };
       
@@ -95,6 +126,20 @@ const BookingPage: React.FC = () => {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Schedule Service</h1>
       
+      {/* Show address for confirmation */}
+      {fullAddress && (
+        <div className="bg-gray-50 rounded-md p-4 mb-6 border border-gray-200">
+          <h3 className="text-lg font-medium mb-2">Service Address</h3>
+          <p className="text-gray-700">{fullAddress}</p>
+          <button 
+            onClick={() => setShowAddressDialog(true)}
+            className="text-dwellin-sky text-sm font-medium mt-2 hover:text-dwellin-navy"
+          >
+            Change Address
+          </button>
+        </div>
+      )}
+      
       <div className="grid md:grid-cols-3 gap-8">
         {/* Left column: Booking form */}
         <div className="md:col-span-2">
@@ -121,6 +166,13 @@ const BookingPage: React.FC = () => {
           />
         </div>
       </div>
+      
+      {/* Address dialog */}
+      <AddressDialog
+        isOpen={showAddressDialog}
+        onOpenChange={setShowAddressDialog}
+        onAddressSelect={handleAddressSelect}
+      />
       
       {/* Payment modal */}
       <PaymentModal
