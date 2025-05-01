@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -31,6 +32,19 @@ export const createBooking = async (bookingData: BookingData): Promise<string | 
     // Format the date as ISO string for database storage
     const formattedDate = bookingData.date.toISOString().split('T')[0];
     
+    console.log("Creating booking with data:", {
+      customer_name: bookingData.name,
+      customer_email: bookingData.email,
+      customer_phone: bookingData.phone,
+      booking_date: formattedDate,
+      time_slot: bookingData.timeSlot,
+      special_instructions: bookingData.notes || null,
+      zip_code: bookingData.zipCode,
+      service_id: bookingData.serviceId,
+      payment_amount: bookingData.paymentAmount,
+      address: bookingData.address || null
+    });
+    
     // Prepare the booking data for inserting into the database
     const { data, error } = await supabase
       .from('bookings')
@@ -40,12 +54,13 @@ export const createBooking = async (bookingData: BookingData): Promise<string | 
         customer_phone: bookingData.phone,
         booking_date: formattedDate,
         time_slot: bookingData.timeSlot,
-        special_instructions: bookingData.notes,
+        special_instructions: bookingData.notes || null,
         zip_code: bookingData.zipCode,
         service_id: bookingData.serviceId,
         payment_amount: bookingData.paymentAmount,
         payment_status: 'authorized',  // Since we're just authorizing the payment
-        status: 'confirmed'            // Initial booking status
+        status: 'confirmed',           // Initial booking status
+        address: bookingData.address || null  // Include address field if provided
       })
       .select()
       .single();

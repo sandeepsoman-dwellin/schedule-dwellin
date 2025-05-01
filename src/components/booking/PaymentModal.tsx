@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,8 +12,21 @@ interface PaymentModalProps {
 }
 
 const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onOpenChange, onPaymentComplete }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const handlePaymentConfirm = () => {
+    setIsLoading(true);
+    // Simulate a slight delay for UX purposes
+    setTimeout(() => {
+      onPaymentComplete();
+      setIsLoading(false);
+    }, 1000);
+  };
+  
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!isLoading) onOpenChange(open);
+    }}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">Enter Payment Information</DialogTitle>
@@ -52,14 +65,26 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onOpenChange, onPay
           </div>
           
           <div className="flex justify-end space-x-3 pt-4">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+              disabled={isLoading}
+            >
               Cancel
             </Button>
             <Button 
               className="bg-dwellin-sky hover:bg-opacity-90" 
-              onClick={onPaymentComplete}
+              onClick={handlePaymentConfirm}
+              disabled={isLoading}
             >
-              Confirm Payment
+              {isLoading ? (
+                <>
+                  <div className="h-5 w-5 border-t-2 border-b-2 border-white rounded-full animate-spin mr-2"></div>
+                  Processing...
+                </>
+              ) : (
+                'Confirm Payment'
+              )}
             </Button>
           </div>
         </div>

@@ -25,6 +25,7 @@ const BookingPage: React.FC = () => {
   const [zipCode, setZipCode] = useState<string>('');
   const [fullAddress, setFullAddress] = useState<string>('');
   const [showAddressDialog, setShowAddressDialog] = useState(false);
+  const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
   
   // Check for address data from sessionStorage
   useEffect(() => {
@@ -86,10 +87,12 @@ const BookingPage: React.FC = () => {
   };
   
   // Handle payment processing
-  const handlePaymentSuccess = async (paymentMethod: string) => {
+  const handlePaymentSuccess = async () => {
     if (!formData || !service) return;
     
     try {
+      setIsPaymentProcessing(true);
+      
       // Create booking data with all required fields
       const bookingData: BookingData = {
         name: formData.name,
@@ -104,6 +107,7 @@ const BookingPage: React.FC = () => {
         notes: formData.notes || ''
       };
       
+      console.log("Sending booking data:", bookingData);
       const newBookingId = await createBooking(bookingData);
       
       if (newBookingId) {
@@ -117,6 +121,8 @@ const BookingPage: React.FC = () => {
     } catch (error) {
       console.error("Error processing booking:", error);
       toast.error("Payment processing error. Please try again.");
+    } finally {
+      setIsPaymentProcessing(false);
     }
   };
   
@@ -164,7 +170,7 @@ const BookingPage: React.FC = () => {
         <div className="md:col-span-2">
           <BookingForm 
             onSubmit={handleFormSubmit} 
-            isPaymentProcessing={false} 
+            isPaymentProcessing={isPaymentProcessing} 
           />
         </div>
         
@@ -181,7 +187,7 @@ const BookingPage: React.FC = () => {
                 );
               }
             }}
-            isPaymentProcessing={false}
+            isPaymentProcessing={isPaymentProcessing}
           />
         </div>
       </div>
@@ -197,7 +203,7 @@ const BookingPage: React.FC = () => {
       <PaymentModal
         isOpen={showPaymentModal}
         onOpenChange={setShowPaymentModal}
-        onPaymentComplete={() => handlePaymentSuccess('credit-card')}
+        onPaymentComplete={handlePaymentSuccess}
       />
     </div>
   );
