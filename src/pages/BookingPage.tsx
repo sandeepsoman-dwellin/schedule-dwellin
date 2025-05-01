@@ -26,24 +26,41 @@ const BookingPage: React.FC = () => {
   const [fullAddress, setFullAddress] = useState<string>('');
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   
-  // Check for address data
+  // Check for address data from sessionStorage
   useEffect(() => {
-    // Get zip code from URL or localStorage
-    const urlZipCode = searchParams.get('zipCode');
-    const storedZipCode = localStorage.getItem('zipCode');
-    const storedAddress = localStorage.getItem('customerAddress');
+    // First check sessionStorage
+    const storedZipCode = sessionStorage.getItem('zipCode');
+    const storedAddress = sessionStorage.getItem('customerAddress');
     
-    if (urlZipCode) {
-      setZipCode(urlZipCode);
-      // If we only have zipCode but no full address, prompt for address
-      if (!storedAddress) {
-        setShowAddressDialog(true);
-      } else {
-        setFullAddress(storedAddress);
-      }
-    } else if (storedZipCode && storedAddress) {
+    // Then check URL parameters or localStorage as fallback
+    const urlZipCode = searchParams.get('zipCode');
+    const localZipCode = localStorage.getItem('zipCode');
+    const localAddress = localStorage.getItem('customerAddress');
+    
+    if (storedZipCode && storedAddress) {
+      // Use sessionStorage values (highest priority)
       setZipCode(storedZipCode);
       setFullAddress(storedAddress);
+    } else if (urlZipCode) {
+      // Use URL zipCode, potentially showing dialog for full address
+      setZipCode(urlZipCode);
+      
+      // If we find address in localStorage, use it and save to sessionStorage
+      if (localAddress) {
+        setFullAddress(localAddress);
+        sessionStorage.setItem('customerAddress', localAddress);
+        sessionStorage.setItem('zipCode', urlZipCode);
+      } else {
+        // Need to collect full address
+        setShowAddressDialog(true);
+      }
+    } else if (localZipCode && localAddress) {
+      // Use localStorage values as last resort
+      setZipCode(localZipCode);
+      setFullAddress(localAddress);
+      // Save to sessionStorage for future use
+      sessionStorage.setItem('customerAddress', localAddress);
+      sessionStorage.setItem('zipCode', localZipCode);
     } else {
       // No address information available, show dialog
       setShowAddressDialog(true);
@@ -55,9 +72,11 @@ const BookingPage: React.FC = () => {
     setFullAddress(address);
     setZipCode(newZipCode);
     
-    // Save to localStorage for future use
+    // Save to both localStorage and sessionStorage for future use
     localStorage.setItem('customerAddress', address);
     localStorage.setItem('zipCode', newZipCode);
+    sessionStorage.setItem('customerAddress', address);
+    sessionStorage.setItem('zipCode', newZipCode);
   };
   
   // Handle form submission

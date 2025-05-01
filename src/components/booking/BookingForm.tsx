@@ -166,8 +166,11 @@ const BookingForm: React.FC<BookingFormProps> = ({ onSubmit, isPaymentProcessing
                       mode="single"
                       selected={field.value}
                       onSelect={(date) => {
-                        field.onChange(date);
-                        setIsCalendarOpen(false); // Close calendar after selection
+                        if (date) {
+                          field.onChange(date);
+                          // Close calendar after selection
+                          setIsCalendarOpen(false);
+                        }
                       }}
                       disabled={(date) => {
                         // Disable dates before the earliest available date

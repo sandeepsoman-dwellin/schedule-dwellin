@@ -67,6 +67,17 @@ const AddressInput = ({ onAddressSelect }: AddressInputProps) => {
     };
   }, [placesLoaded, quotaExceeded]);
 
+  // Load address from sessionStorage if available
+  useEffect(() => {
+    const storedAddress = sessionStorage.getItem("customerAddress");
+    const storedZipCode = sessionStorage.getItem("zipCode");
+    
+    if (storedAddress && storedZipCode) {
+      setAddress(storedAddress);
+      setZipCode(storedZipCode);
+    }
+  }, []);
+
   // When the component mounts, focus the input field for better UX
   useEffect(() => {
     if (inputRef.current) {
@@ -85,6 +96,10 @@ const AddressInput = ({ onAddressSelect }: AddressInputProps) => {
       setIsLoading(false);
       return;
     }
+
+    // Save address to sessionStorage
+    sessionStorage.setItem("customerAddress", selectedAddress);
+    sessionStorage.setItem("zipCode", selectedZipCode);
 
     // Submit the address and zip code
     setTimeout(() => {

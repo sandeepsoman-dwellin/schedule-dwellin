@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { useParams, useSearchParams, Link } from "react-router-dom";
+import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon, Clock, Check, Phone, Mail, Info, Award } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -11,14 +11,17 @@ import { useService } from "@/hooks/services";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProfessionals } from "@/hooks/useProfessionals";
 import { toast } from "sonner";
+import AddressDialog from "@/components/booking/AddressDialog";
 
 const ServiceDetail = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const zipCode = searchParams.get("zip") || "";
   const { data: service, isLoading: isLoadingService, error } = useService(id || "");
   const { data: professionals, isLoading: isLoadingProfessionals } = useProfessionals();
   const [selectedPro, setSelectedPro] = useState<any>(null);
+  const [showAddressDialog, setShowAddressDialog] = useState(false);
 
   useEffect(() => {
     if (error) {
@@ -34,6 +37,32 @@ const ServiceDetail = () => {
       setSelectedPro(professionals[randomProIndex]);
     }
   }, [professionals]);
+
+  const handleBookNowClick = () => {
+    // Check if we have address in sessionStorage
+    const storedAddress = sessionStorage.getItem("customerAddress");
+    const storedZipCode = sessionStorage.getItem("zipCode");
+    
+    if (storedAddress && storedZipCode) {
+      // We have the address, navigate directly to booking page
+      navigate(`/booking?serviceId=${service?.id || id}&zipCode=${storedZipCode}`);
+    } else {
+      // No address in sessionStorage, show dialog
+      setShowAddressDialog(true);
+    }
+  };
+  
+  const handleAddressSelect = (address: string, newZipCode: string) => {
+    // Save to both localStorage and sessionStorage
+    localStorage.setItem("customerAddress", address);
+    localStorage.setItem("zipCode", newZipCode);
+    sessionStorage.setItem("customerAddress", address);
+    sessionStorage.setItem("zipCode", newZipCode);
+    
+    // Close dialog and navigate to booking page
+    setShowAddressDialog(false);
+    navigate(`/booking?serviceId=${service?.id || id}&zipCode=${newZipCode}`);
+  };
 
   // Add debug logging to help troubleshoot
   console.log("ServiceDetail - id param:", id);
@@ -227,16 +256,24 @@ const ServiceDetail = () => {
               Choose a convenient date and time for your {service.name.toLowerCase()}, and our professional 
               will take care of the rest.
             </p>
-            <Link to={`/booking?service=${service.slug}&zip=${zipCode}`}>
-              <Button className="bg-dwellin-sky hover:bg-opacity-90 text-white px-8 py-6 text-lg">
-                Schedule Now
-              </Button>
-            </Link>
+            <Button 
+              className="bg-dwellin-sky hover:bg-opacity-90 text-white px-8 py-6 text-lg"
+              onClick={handleBookNowClick}
+            >
+              Schedule Now
+            </Button>
           </div>
         </div>
       </main>
 
       <Footer />
+      
+      {/* Address dialog */}
+      <AddressDialog
+        isOpen={showAddressDialog}
+        onOpenChange={setShowAddressDialog}
+        onAddressSelect={handleAddressSelect}
+      />
     </div>
   );
 };
