@@ -73,7 +73,7 @@ const BookingsDashboard: React.FC = () => {
   
   // Filter bookings by the verified phone number if it exists
   const filteredBookings = verifiedPhone 
-    ? bookings.filter(booking => booking.phone === verifiedPhone)
+    ? bookings.filter(booking => booking.customer_phone === verifiedPhone)
     : bookings;
   
   return (
