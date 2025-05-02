@@ -17,10 +17,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Booking } from '@/hooks/bookings/useBookings';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { Calendar, Clock, CreditCard } from 'lucide-react';
 
 const BookingsDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [isVerified, setIsVerified] = useState(false);
   const [isVerificationOpen, setIsVerificationOpen] = useState(false);
   const { data, isLoading, error, refetch } = useBookings();
   
@@ -34,36 +34,31 @@ const BookingsDashboard: React.FC = () => {
   const [cancelBookingId, setCancelBookingId] = useState<string | null>(null);
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([]);
   
-  // Check for verified phone on mount
+  // Check for verification on mount
   useEffect(() => {
     const verifiedPhone = localStorage.getItem("verifiedPhone");
     console.log("BookingsDashboard: Checking for verified phone:", verifiedPhone);
     
-    if (verifiedPhone) {
-      console.log("BookingsDashboard: Phone is verified:", verifiedPhone);
-      setIsVerified(true);
-      setIsVerificationOpen(false); // Ensure dialog is closed when verified
-    } else {
+    if (!verifiedPhone) {
       console.log("BookingsDashboard: No verified phone, showing verification dialog");
-      // If no verified phone, show verification dialog
       setIsVerificationOpen(true);
     }
   }, []);
   
   const handleVerificationComplete = (phone: string) => {
     console.log("BookingsDashboard: Verification completed with phone:", phone);
-    setIsVerified(true);
     setIsVerificationOpen(false);
+    refetch(); // Refresh the bookings data after verification
   };
   
-  // Only redirect to home if dialog is closed by user action AND not verified
-  // This useEffect was causing the issue - it was redirecting even when verification was successful
-  useEffect(() => {
-    if (!isVerified && !isVerificationOpen && localStorage.getItem("verifiedPhone") === null) {
-      console.log("BookingsDashboard: Not verified and dialog closed manually, redirecting to home");
+  // Handle redirection when verification dialog is closed without verification
+  const handleVerificationDialogChange = (open: boolean) => {
+    setIsVerificationOpen(open);
+    if (!open && !localStorage.getItem("verifiedPhone")) {
+      console.log("BookingsDashboard: Verification dialog closed without verification, redirecting to home");
       navigate('/', { replace: true });
     }
-  }, [isVerified, isVerificationOpen, navigate]);
+  };
   
   // Handle reschedule
   const handleReschedule = (booking: Booking) => {
@@ -96,31 +91,6 @@ const BookingsDashboard: React.FC = () => {
       refetch();
     }
   };
-  
-  // Showing verification dialog if not verified
-  if (!isVerified) {
-    return (
-      <div className="flex flex-col min-h-screen">
-        <Navbar />
-        <div className="container mx-auto px-4 py-8 flex-grow">
-          <PhoneVerification
-            isOpen={isVerificationOpen}
-            onOpenChange={(open) => {
-              setIsVerificationOpen(open);
-              // Only navigate away if the dialog is closed by user action without verification
-              if (!open && !isVerified && localStorage.getItem("verifiedPhone") === null) {
-                console.log("BookingsDashboard: Verification dialog closed without verification, navigating to home");
-                navigate('/', { replace: true });
-              }
-            }}
-            onVerificationComplete={handleVerificationComplete}
-          />
-          <LoadingState message="Verifying your identity..." />
-        </div>
-        <Footer />
-      </div>
-    );
-  }
   
   if (isLoading) {
     return (
@@ -205,8 +175,14 @@ const BookingsDashboard: React.FC = () => {
           ) : (
             <Tabs defaultValue="upcoming" className="w-full">
               <TabsList className="mb-6">
-                <TabsTrigger value="upcoming">Upcoming Appointments</TabsTrigger>
-                <TabsTrigger value="history">Booking History</TabsTrigger>
+                <TabsTrigger value="upcoming" className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Upcoming Appointments
+                </TabsTrigger>
+                <TabsTrigger value="history" className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Booking History
+                </TabsTrigger>
               </TabsList>
               
               <TabsContent value="upcoming">
@@ -245,6 +221,13 @@ const BookingsDashboard: React.FC = () => {
             onClose={() => setIsCancelDialogOpen(false)}
             onConfirm={handleCancelConfirm}
             bookingId={cancelBookingId}
+          />
+          
+          {/* Phone verification dialog */}
+          <PhoneVerification
+            isOpen={isVerificationOpen}
+            onOpenChange={handleVerificationDialogChange}
+            onVerificationComplete={handleVerificationComplete}
           />
         </div>
       </main>

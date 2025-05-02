@@ -27,6 +27,7 @@ const PhoneVerification = ({ isOpen, onOpenChange, onVerificationComplete }: Pho
     
     // Mock API call to send verification code
     setTimeout(() => {
+      console.log("Verification code sent to phone:", phone);
       toast.success("Verification code sent! For demo purposes, use 1234");
       setCodeSent(true);
       setIsSubmitting(false);
@@ -44,20 +45,24 @@ const PhoneVerification = ({ isOpen, onOpenChange, onVerificationComplete }: Pho
     // Mock verification - for demo purposes, accept "1234" as valid code
     setTimeout(() => {
       if (verificationCode === "1234") {
+        console.log("Phone verification successful:", phone);
         toast.success("Phone verified successfully!");
         
         // Store the verified phone in localStorage
         localStorage.setItem("verifiedPhone", phone);
-        console.log("Phone verification successful, stored in localStorage:", phone);
         
-        // IMPORTANT: Complete the verification process first before closing dialog
-        // This ensures the BookingsDashboard detects the verification before any redirect logic runs
+        // Call the completion handler to notify parent components
         onVerificationComplete(phone);
         
         // Reset the form state for next use
         setPhone("");
         setVerificationCode("");
         setCodeSent(false);
+        
+        // Close the dialog AFTER verification is complete
+        setTimeout(() => {
+          onOpenChange(false);
+        }, 100);
       } else {
         toast.error("Invalid verification code");
         setIsSubmitting(false);

@@ -10,17 +10,27 @@ const Navbar = () => {
   const navigate = useNavigate();
   
   const handleVerificationComplete = (phone: string) => {
-    console.log("Verification complete in Navbar, navigating to bookings page");
+    console.log("Verification complete in Navbar with phone:", phone);
     
-    // Close the verification dialog FIRST (important for order of operations)
+    // Close the modal first
     setIsVerificationOpen(false);
     
-    // Then navigate - using setTimeout to ensure state updates have completed
-    // This helps avoid any race conditions between state updates and navigation
+    // Then navigate to bookings page with a slight delay to ensure state updates are complete
     setTimeout(() => {
-      // Force a hard navigation to the bookings page to ensure clean state
       navigate("/bookings", { replace: true });
-    }, 10);
+    }, 100);
+  };
+  
+  const handleBookingsClick = () => {
+    // Check if user is already verified before showing dialog
+    const verifiedPhone = localStorage.getItem("verifiedPhone");
+    if (verifiedPhone) {
+      // If already verified, navigate directly
+      navigate("/bookings", { replace: true });
+    } else {
+      // Otherwise, show verification dialog
+      setIsVerificationOpen(true);
+    }
   };
   
   return (
@@ -46,17 +56,7 @@ const Navbar = () => {
           <Button 
             variant="ghost"
             className="text-gray-600 hover:text-dwellin-navy"
-            onClick={() => {
-              // Check if user is already verified before showing dialog
-              const verifiedPhone = localStorage.getItem("verifiedPhone");
-              if (verifiedPhone) {
-                // If already verified, navigate directly
-                navigate("/bookings", { replace: true });
-              } else {
-                // Otherwise, show verification dialog
-                setIsVerificationOpen(true);
-              }
-            }}
+            onClick={handleBookingsClick}
           >
             My Bookings
           </Button>
@@ -98,15 +98,7 @@ const Navbar = () => {
               className="py-2 px-4 text-left text-gray-600 hover:bg-gray-100 rounded-md"
               onClick={() => {
                 setIsMenuOpen(false);
-                // Check if user is already verified before showing dialog
-                const verifiedPhone = localStorage.getItem("verifiedPhone");
-                if (verifiedPhone) {
-                  // If already verified, navigate directly
-                  navigate("/bookings", { replace: true });
-                } else {
-                  // Otherwise, show verification dialog
-                  setIsVerificationOpen(true);
-                }
+                handleBookingsClick();
               }}
             >
               My Bookings
