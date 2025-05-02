@@ -50,7 +50,8 @@ const PhoneVerification = ({ isOpen, onOpenChange, onVerificationComplete }: Pho
         localStorage.setItem("verifiedPhone", phone);
         console.log("Phone verification successful, stored in localStorage:", phone);
         
-        // Call the completion handler to trigger navigation
+        // IMPORTANT: Complete the verification process first before closing dialog
+        // This ensures the BookingsDashboard detects the verification before any redirect logic runs
         onVerificationComplete(phone);
         
         // Reset the form state for next use
@@ -59,8 +60,8 @@ const PhoneVerification = ({ isOpen, onOpenChange, onVerificationComplete }: Pho
         setCodeSent(false);
       } else {
         toast.error("Invalid verification code");
+        setIsSubmitting(false);
       }
-      setIsSubmitting(false);
     }, 1000);
   };
   

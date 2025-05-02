@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -13,14 +12,15 @@ const Navbar = () => {
   const handleVerificationComplete = (phone: string) => {
     console.log("Verification complete in Navbar, navigating to bookings page");
     
-    // We need to ensure the phone is stored in localStorage BEFORE navigation
-    // (This should already be done in the PhoneVerification component)
-    
-    // Force a hard navigation to the bookings page to ensure clean state
-    navigate("/bookings", { replace: true });
-    
-    // Close the verification dialog
+    // Close the verification dialog FIRST (important for order of operations)
     setIsVerificationOpen(false);
+    
+    // Then navigate - using setTimeout to ensure state updates have completed
+    // This helps avoid any race conditions between state updates and navigation
+    setTimeout(() => {
+      // Force a hard navigation to the bookings page to ensure clean state
+      navigate("/bookings", { replace: true });
+    }, 10);
   };
   
   return (
@@ -46,7 +46,17 @@ const Navbar = () => {
           <Button 
             variant="ghost"
             className="text-gray-600 hover:text-dwellin-navy"
-            onClick={() => setIsVerificationOpen(true)}
+            onClick={() => {
+              // Check if user is already verified before showing dialog
+              const verifiedPhone = localStorage.getItem("verifiedPhone");
+              if (verifiedPhone) {
+                // If already verified, navigate directly
+                navigate("/bookings", { replace: true });
+              } else {
+                // Otherwise, show verification dialog
+                setIsVerificationOpen(true);
+              }
+            }}
           >
             My Bookings
           </Button>
@@ -88,7 +98,15 @@ const Navbar = () => {
               className="py-2 px-4 text-left text-gray-600 hover:bg-gray-100 rounded-md"
               onClick={() => {
                 setIsMenuOpen(false);
-                setIsVerificationOpen(true);
+                // Check if user is already verified before showing dialog
+                const verifiedPhone = localStorage.getItem("verifiedPhone");
+                if (verifiedPhone) {
+                  // If already verified, navigate directly
+                  navigate("/bookings", { replace: true });
+                } else {
+                  // Otherwise, show verification dialog
+                  setIsVerificationOpen(true);
+                }
               }}
             >
               My Bookings

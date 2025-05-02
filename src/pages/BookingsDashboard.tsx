@@ -42,6 +42,7 @@ const BookingsDashboard: React.FC = () => {
     if (verifiedPhone) {
       console.log("BookingsDashboard: Phone is verified:", verifiedPhone);
       setIsVerified(true);
+      setIsVerificationOpen(false); // Ensure dialog is closed when verified
     } else {
       console.log("BookingsDashboard: No verified phone, showing verification dialog");
       // If no verified phone, show verification dialog
@@ -51,15 +52,15 @@ const BookingsDashboard: React.FC = () => {
   
   const handleVerificationComplete = (phone: string) => {
     console.log("BookingsDashboard: Verification completed with phone:", phone);
-    // Note: The phone is already stored in localStorage by the PhoneVerification component
     setIsVerified(true);
     setIsVerificationOpen(false);
   };
   
-  // If not verified and dialog is closed, redirect to home
+  // Only redirect to home if dialog is closed by user action AND not verified
+  // This useEffect was causing the issue - it was redirecting even when verification was successful
   useEffect(() => {
-    if (!isVerified && !isVerificationOpen) {
-      console.log("BookingsDashboard: Not verified and dialog closed, redirecting to home");
+    if (!isVerified && !isVerificationOpen && localStorage.getItem("verifiedPhone") === null) {
+      console.log("BookingsDashboard: Not verified and dialog closed manually, redirecting to home");
       navigate('/', { replace: true });
     }
   }, [isVerified, isVerificationOpen, navigate]);
@@ -106,7 +107,8 @@ const BookingsDashboard: React.FC = () => {
             isOpen={isVerificationOpen}
             onOpenChange={(open) => {
               setIsVerificationOpen(open);
-              if (!open && !isVerified) {
+              // Only navigate away if the dialog is closed by user action without verification
+              if (!open && !isVerified && localStorage.getItem("verifiedPhone") === null) {
                 console.log("BookingsDashboard: Verification dialog closed without verification, navigating to home");
                 navigate('/', { replace: true });
               }
