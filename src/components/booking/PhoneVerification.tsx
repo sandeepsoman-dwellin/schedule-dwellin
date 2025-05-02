@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -26,7 +26,6 @@ const PhoneVerification = ({ isOpen, onOpenChange, onVerificationComplete }: Pho
     setIsSubmitting(true);
     
     // Mock API call to send verification code
-    // In a real implementation, this would call an API to send an SMS
     setTimeout(() => {
       toast.success("Verification code sent! For demo purposes, use 1234");
       setCodeSent(true);
@@ -46,10 +45,14 @@ const PhoneVerification = ({ isOpen, onOpenChange, onVerificationComplete }: Pho
     setTimeout(() => {
       if (verificationCode === "1234") {
         toast.success("Phone verified successfully!");
-        // Store the verified phone in localStorage before calling onVerificationComplete
+        
+        // Store the verified phone in localStorage
         localStorage.setItem("verifiedPhone", phone);
-        // Then call onVerificationComplete to trigger navigation
+        console.log("Phone verification successful, stored in localStorage:", phone);
+        
+        // Call the completion handler to trigger navigation
         onVerificationComplete(phone);
+        
         // Reset the form state for next use
         setPhone("");
         setVerificationCode("");
@@ -68,13 +71,16 @@ const PhoneVerification = ({ isOpen, onOpenChange, onVerificationComplete }: Pho
           <DialogTitle className="text-center text-xl">
             {codeSent ? "Enter Verification Code" : "Enter Your Phone Number"}
           </DialogTitle>
+          <DialogDescription className="text-center text-gray-600">
+            {codeSent 
+              ? "We've sent a verification code to your phone. Please enter it below."
+              : "Enter the phone number you used for booking to access your bookings"
+            }
+          </DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-4">
           {!codeSent ? (
             <>
-              <p className="text-center text-gray-600 mb-4">
-                Enter the phone number you used for booking to access your bookings
-              </p>
               <div className="space-y-4">
                 <Input
                   type="tel"
@@ -94,9 +100,6 @@ const PhoneVerification = ({ isOpen, onOpenChange, onVerificationComplete }: Pho
             </>
           ) : (
             <>
-              <p className="text-center text-gray-600 mb-4">
-                We've sent a verification code to your phone. Please enter it below.
-              </p>
               <div className="space-y-4">
                 <Input
                   type="text"

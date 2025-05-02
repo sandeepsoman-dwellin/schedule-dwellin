@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useBookings } from '@/hooks/bookings/useBookings';
@@ -36,19 +37,21 @@ const BookingsDashboard: React.FC = () => {
   // Check for verified phone on mount
   useEffect(() => {
     const verifiedPhone = localStorage.getItem("verifiedPhone");
-    console.log("Checking for verified phone:", verifiedPhone);
+    console.log("BookingsDashboard: Checking for verified phone:", verifiedPhone);
     
     if (verifiedPhone) {
+      console.log("BookingsDashboard: Phone is verified:", verifiedPhone);
       setIsVerified(true);
     } else {
+      console.log("BookingsDashboard: No verified phone, showing verification dialog");
       // If no verified phone, show verification dialog
       setIsVerificationOpen(true);
     }
   }, []);
   
   const handleVerificationComplete = (phone: string) => {
-    console.log("Verification completed in dashboard with phone:", phone);
-    localStorage.setItem("verifiedPhone", phone);
+    console.log("BookingsDashboard: Verification completed with phone:", phone);
+    // Note: The phone is already stored in localStorage by the PhoneVerification component
     setIsVerified(true);
     setIsVerificationOpen(false);
   };
@@ -56,7 +59,7 @@ const BookingsDashboard: React.FC = () => {
   // If not verified and dialog is closed, redirect to home
   useEffect(() => {
     if (!isVerified && !isVerificationOpen) {
-      console.log("Not verified and dialog closed, redirecting to home");
+      console.log("BookingsDashboard: Not verified and dialog closed, redirecting to home");
       navigate('/', { replace: true });
     }
   }, [isVerified, isVerificationOpen, navigate]);
@@ -93,33 +96,55 @@ const BookingsDashboard: React.FC = () => {
     }
   };
   
+  // Showing verification dialog if not verified
   if (!isVerified) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <PhoneVerification
-          isOpen={isVerificationOpen}
-          onOpenChange={(open) => {
-            setIsVerificationOpen(open);
-            if (!open && !isVerified) {
-              navigate('/', { replace: true });
-            }
-          }}
-          onVerificationComplete={handleVerificationComplete}
-        />
-        <LoadingState message="Verifying your identity..." />
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8 flex-grow">
+          <PhoneVerification
+            isOpen={isVerificationOpen}
+            onOpenChange={(open) => {
+              setIsVerificationOpen(open);
+              if (!open && !isVerified) {
+                console.log("BookingsDashboard: Verification dialog closed without verification, navigating to home");
+                navigate('/', { replace: true });
+              }
+            }}
+            onVerificationComplete={handleVerificationComplete}
+          />
+          <LoadingState message="Verifying your identity..." />
+        </div>
+        <Footer />
       </div>
     );
   }
   
   if (isLoading) {
-    return <LoadingState message="Loading bookings..." />;
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        <div className="flex-grow">
+          <LoadingState message="Loading bookings..." />
+        </div>
+        <Footer />
+      </div>
+    );
   }
   
   if (error || !data) {
-    return <ErrorState 
-      title="Error Loading Bookings" 
-      message="We encountered an issue while loading your bookings. Please try again later."
-    />;
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        <div className="flex-grow">
+          <ErrorState 
+            title="Error Loading Bookings" 
+            message="We encountered an issue while loading your bookings. Please try again later."
+          />
+        </div>
+        <Footer />
+      </div>
+    );
   }
   
   const bookings = data;

@@ -11,9 +11,14 @@ const Navbar = () => {
   const navigate = useNavigate();
   
   const handleVerificationComplete = (phone: string) => {
-    console.log("Verification complete, navigating to bookings page");
-    // Navigate to bookings dashboard
+    console.log("Verification complete in Navbar, navigating to bookings page");
+    
+    // We need to ensure the phone is stored in localStorage BEFORE navigation
+    // (This should already be done in the PhoneVerification component)
+    
+    // Force a hard navigation to the bookings page to ensure clean state
     navigate("/bookings", { replace: true });
+    
     // Close the verification dialog
     setIsVerificationOpen(false);
   };
