@@ -47,13 +47,13 @@ const Navbar = () => {
         <nav className="hidden md:flex items-center space-x-8">
           <Link to="/services" className="text-gray-600 hover:text-dwellin-navy">Services</Link>
           <Link to="/" className="text-gray-600 hover:text-dwellin-navy">How It Works</Link>
-          <Button 
-            variant="ghost"
+          <Link 
+            to="#" 
             className="text-gray-600 hover:text-dwellin-navy"
             onClick={handleBookingsClick}
           >
             My Bookings
-          </Button>
+          </Link>
           <Button className="bg-dwellin-sky hover:bg-opacity-90 text-white">Get Started</Button>
         </nav>
         
@@ -88,15 +88,16 @@ const Navbar = () => {
             >
               How It Works
             </Link>
-            <button 
-              className="py-2 px-4 text-left text-gray-600 hover:bg-gray-100 rounded-md"
+            <Link 
+              to="#"
+              className="py-2 px-4 text-gray-600 hover:bg-gray-100 rounded-md"
               onClick={(e) => {
                 setIsMenuOpen(false);
                 handleBookingsClick(e);
               }}
             >
               My Bookings
-            </button>
+            </Link>
             <Link to="/">
               <Button 
                 className="w-full bg-dwellin-sky hover:bg-opacity-90 text-white"

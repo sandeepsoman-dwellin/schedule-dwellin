@@ -38,7 +38,9 @@ const BookingsList: React.FC<BookingsListProps> = ({
           <CardContent className="p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row justify-between">
               <div>
-                <h3 className="font-medium text-lg mb-2">{booking.service?.name || "Unknown Service"}</h3>
+                <h3 className="font-medium text-lg mb-2">
+                  {booking.service?.name || "Unknown Service"}
+                </h3>
                 <div className="flex items-center gap-2 text-gray-600 mb-1">
                   <Calendar className="h-4 w-4" />
                   <span>{format(new Date(booking.booking_date), 'MMMM d, yyyy')}</span>
