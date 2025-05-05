@@ -50,13 +50,19 @@ const RescheduleDialog: React.FC<RescheduleDialogProps> = ({
     if (booking) {
       setDate(new Date(booking.booking_date));
       setTimeSlot(booking.time_slot);
+      console.log('Dialog opened with booking:', booking);
     }
   }, [booking, isOpen]);
   
   const handleSubmit = async () => {
-    if (!booking || !date || !timeSlot) return;
+    if (!booking || !date || !timeSlot) {
+      console.error('Missing data for reschedule:', { booking, date, timeSlot });
+      return;
+    }
     
+    console.log('Submitting reschedule with:', { id: booking.id, date, timeSlot });
     setIsSubmitting(true);
+    
     try {
       await onReschedule(booking.id, date, timeSlot);
       onClose();
@@ -67,8 +73,9 @@ const RescheduleDialog: React.FC<RescheduleDialogProps> = ({
     }
   };
   
-  // Merge available time slots with default time slots if availableTimeSlots is empty
+  // Use TIME_SLOTS as fallback to ensure consistency with booking process
   const displayTimeSlots = availableTimeSlots.length > 0 ? availableTimeSlots : TIME_SLOTS;
+  console.log('Available time slots for reschedule:', displayTimeSlots);
   
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>

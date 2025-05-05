@@ -79,39 +79,54 @@ const BookingsDashboard: React.FC = () => {
   };
   
   // Handle reschedule
-  const handleReschedule = (booking: Booking) => {
+  const handleReschedule = async (booking: Booking) => {
+    console.log('Starting reschedule process for booking:', booking);
     setSelectedBooking(booking);
+    
     // Fetch available time slots for the selected date
-    const fetchTimeSlots = async () => {
+    try {
       const slots = await getAvailableTimeSlots(new Date(booking.booking_date));
+      console.log('Retrieved available slots:', slots);
       setAvailableTimeSlots(slots);
-    };
-    fetchTimeSlots();
-    setIsRescheduleDialogOpen(true);
+      setIsRescheduleDialogOpen(true);
+    } catch (error) {
+      console.error('Error fetching available time slots:', error);
+      toast.error('Could not load available time slots');
+    }
   };
   
   const handleRescheduleConfirm = async (bookingId: string, date: Date, timeSlot: string) => {
     try {
       console.log('Confirming reschedule with:', { bookingId, date, timeSlot });
+      
+      // Directly call the API function to reschedule
       const success = await rescheduleBooking(bookingId, date, timeSlot);
+      
       if (success) {
         toast.success("Your appointment has been rescheduled and is pending confirmation.");
+        // Explicitly refetch the bookings data to get the updated state
         await refetch();
+      } else {
+        toast.error("Failed to reschedule appointment. Please try again.");
       }
     } catch (error) {
-      console.error('Error rescheduling booking:', error);
-      toast.error('Failed to reschedule appointment');
+      console.error('Error in handleRescheduleConfirm:', error);
+      toast.error('Failed to reschedule appointment due to an unexpected error');
+    } finally {
+      setIsRescheduleDialogOpen(false);
     }
   };
   
   // Handle cancel - first step: open confirmation dialog
   const handleCancel = (bookingId: string) => {
+    console.log('Starting cancellation process for booking:', bookingId);
     setCancelBookingId(bookingId);
     setIsCancelConfirmDialogOpen(true);
   };
   
   // Handle cancel - second step: get cancellation reason
   const handleCancelContinue = async (bookingId: string) => {
+    console.log('User confirmed they want to proceed with cancellation for booking:', bookingId);
     setIsCancelConfirmDialogOpen(false);
     setIsCancellationReasonDialogOpen(true);
   };
@@ -120,14 +135,23 @@ const BookingsDashboard: React.FC = () => {
   const handleCancelConfirm = async (bookingId: string, reason: string) => {
     try {
       console.log('Confirming cancellation with:', { bookingId, reason });
+      
+      // Call the API function to cancel the booking
       const success = await cancelBooking(bookingId, reason);
+      
       if (success) {
         toast.success("Your appointment has been cancelled and your credit card authorization has been dropped.");
+        // Explicitly refetch the bookings data to get the updated state
         await refetch();
+      } else {
+        toast.error("Failed to cancel appointment. Please try again.");
       }
     } catch (error) {
-      console.error('Error canceling booking:', error);
-      toast.error('Failed to cancel appointment');
+      console.error('Error in handleCancelConfirm:', error);
+      toast.error('Failed to cancel appointment due to an unexpected error');
+    } finally {
+      setIsCancellationReasonDialogOpen(false);
+      setCancelBookingId(null);
     }
   };
   
