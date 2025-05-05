@@ -12,7 +12,7 @@ import BookingsHeader from '@/components/booking/BookingsHeader';
 import BookingsEmptyState from '@/components/booking/BookingsEmptyState';
 import BookingsTabs from '@/components/booking/BookingsTabs';
 import CreditsDisplay from '@/components/booking/CreditsDisplay';
-import { rescheduleBooking, cancelBooking, getAvailableTimeSlots } from '@/hooks/bookings/bookingApi';
+import { rescheduleBooking, cancelBooking, getAvailableTimeSlots, TIME_SLOTS } from '@/hooks/bookings/bookingApi';
 import { Booking } from '@/hooks/bookings/useBookings';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -32,7 +32,7 @@ const BookingsDashboard: React.FC = () => {
   const [isCancelConfirmDialogOpen, setIsCancelConfirmDialogOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [cancelBookingId, setCancelBookingId] = useState<string | null>(null);
-  const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([]);
+  const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>(TIME_SLOTS);
   
   // Get the verified phone
   const [verifiedPhone, setVerifiedPhone] = useState<string | null>(
@@ -99,21 +99,25 @@ const BookingsDashboard: React.FC = () => {
     try {
       console.log('Confirming reschedule with:', { bookingId, date, timeSlot });
       
-      // Directly call the API function to reschedule
+      if (!bookingId || !date || !timeSlot) {
+        console.error('Invalid reschedule parameters:', { bookingId, date, timeSlot });
+        toast.error('Missing required information for rescheduling');
+        return;
+      }
+      
+      // Call the API function to reschedule
       const success = await rescheduleBooking(bookingId, date, timeSlot);
       
       if (success) {
-        toast.success("Your appointment has been rescheduled and is pending confirmation.");
-        // Explicitly refetch the bookings data to get the updated state
+        // Close the dialog
+        setIsRescheduleDialogOpen(false);
+        
+        // Force refresh the bookings data
         await refetch();
-      } else {
-        toast.error("Failed to reschedule appointment. Please try again.");
       }
     } catch (error) {
       console.error('Error in handleRescheduleConfirm:', error);
       toast.error('Failed to reschedule appointment due to an unexpected error');
-    } finally {
-      setIsRescheduleDialogOpen(false);
     }
   };
   
@@ -136,22 +140,26 @@ const BookingsDashboard: React.FC = () => {
     try {
       console.log('Confirming cancellation with:', { bookingId, reason });
       
+      if (!bookingId || !reason) {
+        console.error('Invalid cancellation parameters:', { bookingId, reason });
+        toast.error('Missing required information for cancellation');
+        return;
+      }
+      
       // Call the API function to cancel the booking
       const success = await cancelBooking(bookingId, reason);
       
       if (success) {
-        toast.success("Your appointment has been cancelled and your credit card authorization has been dropped.");
-        // Explicitly refetch the bookings data to get the updated state
+        // Close the dialog
+        setIsCancellationReasonDialogOpen(false);
+        setCancelBookingId(null);
+        
+        // Force refresh the bookings data
         await refetch();
-      } else {
-        toast.error("Failed to cancel appointment. Please try again.");
       }
     } catch (error) {
       console.error('Error in handleCancelConfirm:', error);
       toast.error('Failed to cancel appointment due to an unexpected error');
-    } finally {
-      setIsCancellationReasonDialogOpen(false);
-      setCancelBookingId(null);
     }
   };
   

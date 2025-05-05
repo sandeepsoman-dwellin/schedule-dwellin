@@ -131,9 +131,22 @@ export const rescheduleBooking = async (
   try {
     console.log('Starting rescheduleBooking with:', { bookingId, newDate, newTimeSlot });
     
+    // Validation
     if (!bookingId) {
       console.error('Error: bookingId is undefined or null');
       toast.error('Cannot reschedule: Missing booking ID');
+      return false;
+    }
+    
+    if (!newDate) {
+      console.error('Error: newDate is undefined or null');
+      toast.error('Cannot reschedule: Missing date');
+      return false;
+    }
+
+    if (!newTimeSlot || !TIME_SLOTS.includes(newTimeSlot)) {
+      console.error('Error: Invalid time slot:', newTimeSlot);
+      toast.error('Cannot reschedule: Invalid time slot');
       return false;
     }
     
@@ -153,7 +166,8 @@ export const rescheduleBooking = async (
       }
     });
     
-    const { data, error } = await supabase
+    // Execute the update
+    const { error } = await supabase
       .from('bookings')
       .update({
         booking_date: formattedDate,
@@ -161,8 +175,7 @@ export const rescheduleBooking = async (
         status: 'pending', // Set status to pending for rescheduled bookings
         updated_at: new Date().toISOString()
       })
-      .eq('id', bookingId)
-      .select();
+      .eq('id', bookingId);
     
     if (error) {
       console.error('Supabase error rescheduling booking:', error);
@@ -170,13 +183,7 @@ export const rescheduleBooking = async (
       return false;
     }
     
-    if (!data || data.length === 0) {
-      console.error('No data returned after update, but no error was thrown');
-      toast.error('Failed to update appointment - no matching booking found');
-      return false;
-    }
-    
-    console.log('Booking rescheduled successfully, returned data:', data);
+    console.log('Booking rescheduled successfully');
     toast.success('Appointment rescheduled successfully');
     return true;
   } catch (error) {
@@ -190,6 +197,7 @@ export const cancelBooking = async (bookingId: string, cancellationReason: strin
   try {
     console.log('Starting cancelBooking with:', { bookingId, cancellationReason });
     
+    // Validation
     if (!bookingId) {
       console.error('Error: bookingId is undefined or null');
       toast.error('Cannot cancel: Missing booking ID');
@@ -213,15 +221,15 @@ export const cancelBooking = async (bookingId: string, cancellationReason: strin
       }
     });
     
-    const { data, error } = await supabase
+    // Execute the update
+    const { error } = await supabase
       .from('bookings')
       .update({
         status: 'cancelled',
         cancellation_reason: cancellationReason,
         updated_at: new Date().toISOString()
       })
-      .eq('id', bookingId)
-      .select();
+      .eq('id', bookingId);
     
     if (error) {
       console.error('Supabase error cancelling booking:', error);
@@ -229,13 +237,7 @@ export const cancelBooking = async (bookingId: string, cancellationReason: strin
       return false;
     }
     
-    if (!data || data.length === 0) {
-      console.error('No data returned after cancel update, but no error was thrown');
-      toast.error('Failed to cancel appointment - no matching booking found');
-      return false;
-    }
-    
-    console.log('Booking cancelled successfully, returned data:', data);
+    console.log('Booking cancelled successfully');
     toast.success('Your appointment has been cancelled and the credit card authorization has been dropped.');
     return true;
   } catch (error) {

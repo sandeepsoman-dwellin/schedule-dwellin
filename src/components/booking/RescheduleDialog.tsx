@@ -65,7 +65,6 @@ const RescheduleDialog: React.FC<RescheduleDialogProps> = ({
     
     try {
       await onReschedule(booking.id, date, timeSlot);
-      onClose();
     } catch (error) {
       console.error('Failed to reschedule booking:', error);
     } finally {
@@ -73,8 +72,12 @@ const RescheduleDialog: React.FC<RescheduleDialogProps> = ({
     }
   };
   
-  // Use TIME_SLOTS as fallback to ensure consistency with booking process
-  const displayTimeSlots = availableTimeSlots.length > 0 ? availableTimeSlots : TIME_SLOTS;
+  // Use TIME_SLOTS as fallback and ensure we always have a consistent set of time slots
+  const displayTimeSlots = availableTimeSlots.length > 0 ? 
+    // Ensure we're using only valid time slots from our constant list
+    availableTimeSlots.filter(slot => TIME_SLOTS.includes(slot)) : 
+    TIME_SLOTS;
+    
   console.log('Available time slots for reschedule:', displayTimeSlots);
   
   return (
