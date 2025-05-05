@@ -7,6 +7,7 @@ import ErrorState from '@/components/booking/ErrorState';
 import PhoneVerification from '@/components/booking/PhoneVerification';
 import RescheduleDialog from '@/components/booking/RescheduleDialog';
 import CancellationReasonDialog from '@/components/booking/CancellationReasonDialog';
+import CancelBookingDialog from '@/components/booking/CancelBookingDialog';
 import BookingsHeader from '@/components/booking/BookingsHeader';
 import BookingsEmptyState from '@/components/booking/BookingsEmptyState';
 import BookingsTabs from '@/components/booking/BookingsTabs';
@@ -28,6 +29,7 @@ const BookingsDashboard: React.FC = () => {
   // Reschedule and cancel state
   const [isRescheduleDialogOpen, setIsRescheduleDialogOpen] = useState(false);
   const [isCancellationReasonDialogOpen, setIsCancellationReasonDialogOpen] = useState(false);
+  const [isCancelConfirmDialogOpen, setIsCancelConfirmDialogOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [cancelBookingId, setCancelBookingId] = useState<string | null>(null);
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([]);
@@ -90,10 +92,11 @@ const BookingsDashboard: React.FC = () => {
   
   const handleRescheduleConfirm = async (bookingId: string, date: Date, timeSlot: string) => {
     try {
+      console.log('Confirming reschedule with:', { bookingId, date, timeSlot });
       const success = await rescheduleBooking(bookingId, date, timeSlot);
       if (success) {
         toast.success("Your appointment has been rescheduled and is pending confirmation.");
-        refetch();
+        await refetch();
       }
     } catch (error) {
       console.error('Error rescheduling booking:', error);
@@ -101,18 +104,26 @@ const BookingsDashboard: React.FC = () => {
     }
   };
   
-  // Handle cancel
+  // Handle cancel - first step: open confirmation dialog
   const handleCancel = (bookingId: string) => {
     setCancelBookingId(bookingId);
+    setIsCancelConfirmDialogOpen(true);
+  };
+  
+  // Handle cancel - second step: get cancellation reason
+  const handleCancelContinue = async (bookingId: string) => {
+    setIsCancelConfirmDialogOpen(false);
     setIsCancellationReasonDialogOpen(true);
   };
   
+  // Handle cancel - final step: confirm cancellation with reason
   const handleCancelConfirm = async (bookingId: string, reason: string) => {
     try {
+      console.log('Confirming cancellation with:', { bookingId, reason });
       const success = await cancelBooking(bookingId, reason);
       if (success) {
         toast.success("Your appointment has been cancelled and your credit card authorization has been dropped.");
-        refetch();
+        await refetch();
       }
     } catch (error) {
       console.error('Error canceling booking:', error);
@@ -177,6 +188,14 @@ const BookingsDashboard: React.FC = () => {
             booking={selectedBooking}
             onReschedule={handleRescheduleConfirm}
             availableTimeSlots={availableTimeSlots}
+          />
+          
+          {/* Cancel Booking Confirmation Dialog */}
+          <CancelBookingDialog 
+            isOpen={isCancelConfirmDialogOpen}
+            onClose={() => setIsCancelConfirmDialogOpen(false)}
+            onConfirm={handleCancelContinue}
+            bookingId={cancelBookingId}
           />
           
           {/* Cancellation Reason Dialog */}

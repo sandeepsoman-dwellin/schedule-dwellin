@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -115,12 +114,21 @@ export const getBookingById = async (id: string) => {
   }
 };
 
+// Define the consistent time slots to use across the application
+export const TIME_SLOTS = [
+  '9:00 AM - 11:00 AM',
+  '11:00 AM - 1:00 PM',
+  '1:00 PM - 3:00 PM',
+  '3:00 PM - 5:00 PM'
+];
+
 export const rescheduleBooking = async (
   bookingId: string, 
   newDate: Date, 
   newTimeSlot: string
 ): Promise<boolean> => {
   try {
+    console.log('Rescheduling booking:', { bookingId, newDate, newTimeSlot });
     const formattedDate = newDate.toISOString().split('T')[0];
     
     const { data, error } = await supabase
@@ -152,6 +160,8 @@ export const rescheduleBooking = async (
 
 export const cancelBooking = async (bookingId: string, cancellationReason: string): Promise<boolean> => {
   try {
+    console.log('Cancelling booking:', { bookingId, cancellationReason });
+    
     const { data, error } = await supabase
       .from('bookings')
       .update({
@@ -169,6 +179,7 @@ export const cancelBooking = async (bookingId: string, cancellationReason: strin
     }
     
     console.log('Booking cancelled successfully:', data);
+    toast.success('Your appointment has been cancelled and the credit card authorization has been dropped.');
     return true;
   } catch (error) {
     console.error('Exception in cancelBooking:', error);
@@ -192,13 +203,8 @@ export const getAvailableTimeSlots = async (date: Date): Promise<string[]> => {
       console.error('Error fetching booked time slots:', bookedError);
     }
     
-    // Define all available time slots
-    const allTimeSlots = [
-      '9:00 AM - 11:00 AM',
-      '11:00 AM - 1:00 PM',
-      '1:00 PM - 3:00 PM',
-      '3:00 PM - 5:00 PM'
-    ];
+    // Use the consistent time slots
+    const allTimeSlots = TIME_SLOTS;
     
     // Filter out booked slots
     const bookedTimeSlots = bookedSlots ? bookedSlots.map(slot => slot.time_slot) : [];
@@ -208,11 +214,6 @@ export const getAvailableTimeSlots = async (date: Date): Promise<string[]> => {
     return availableSlots.length > 0 ? availableSlots : allTimeSlots;
   } catch (error) {
     console.error('Exception in getAvailableTimeSlots:', error);
-    return [
-      '9:00 AM - 11:00 AM',
-      '11:00 AM - 1:00 PM',
-      '1:00 PM - 3:00 PM',
-      '3:00 PM - 5:00 PM'
-    ];
+    return TIME_SLOTS;
   }
 };

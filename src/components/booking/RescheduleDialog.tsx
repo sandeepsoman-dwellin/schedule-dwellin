@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { 
   Dialog, 
@@ -22,6 +22,7 @@ import {
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Booking } from '@/hooks/bookings/useBookings';
+import { TIME_SLOTS } from '@/hooks/bookings/bookingApi';
 
 interface RescheduleDialogProps {
   isOpen: boolean;
@@ -44,6 +45,14 @@ const RescheduleDialog: React.FC<RescheduleDialogProps> = ({
   const [timeSlot, setTimeSlot] = useState<string>(booking?.time_slot || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Reset the values when the dialog opens with a new booking
+  useEffect(() => {
+    if (booking) {
+      setDate(new Date(booking.booking_date));
+      setTimeSlot(booking.time_slot);
+    }
+  }, [booking, isOpen]);
+  
   const handleSubmit = async () => {
     if (!booking || !date || !timeSlot) return;
     
@@ -57,6 +66,9 @@ const RescheduleDialog: React.FC<RescheduleDialogProps> = ({
       setIsSubmitting(false);
     }
   };
+  
+  // Merge available time slots with default time slots if availableTimeSlots is empty
+  const displayTimeSlots = availableTimeSlots.length > 0 ? availableTimeSlots : TIME_SLOTS;
   
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -77,14 +89,18 @@ const RescheduleDialog: React.FC<RescheduleDialogProps> = ({
               <PopoverTrigger asChild>
                 <Button
                   id="date"
-                  variant="outline"
+                  variant={"outline"}
                   className={cn(
                     "w-full justify-start text-left font-normal",
                     !date && "text-muted-foreground"
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP") : <span>Select date</span>}
+                  {date ? (
+                    format(date, "PPP")
+                  ) : (
+                    <span>Select date</span>
+                  )}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -109,7 +125,7 @@ const RescheduleDialog: React.FC<RescheduleDialogProps> = ({
                 <SelectValue placeholder="Select time slot" />
               </SelectTrigger>
               <SelectContent>
-                {availableTimeSlots.map((slot) => (
+                {displayTimeSlots.map((slot) => (
                   <SelectItem key={slot} value={slot}>
                     {slot}
                   </SelectItem>
