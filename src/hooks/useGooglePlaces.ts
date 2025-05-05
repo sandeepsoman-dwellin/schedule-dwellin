@@ -10,9 +10,19 @@ declare global {
   }
 }
 
+export interface AddressComponents {
+  street_number?: string;
+  route?: string;
+  locality?: string;
+  administrative_area_level_1?: string;
+  postal_code?: string;
+  formatted_address: string;
+}
+
 export interface GooglePlacesHookResult {
   placesLoaded: boolean;
   setupAutocomplete: (inputElement: HTMLInputElement) => void;
+  getAddressComponents: (place: any) => AddressComponents | null;
   getZipCodeFromPlace: (place: any) => string | null;
   quotaExceeded: boolean;
 }
@@ -113,6 +123,35 @@ export function useGooglePlaces(): GooglePlacesHookResult {
     }
   };
 
+  const getAddressComponents = (place: any): AddressComponents | null => {
+    if (!place || !place.address_components) {
+      console.error("Invalid place object returned");
+      return null;
+    }
+    
+    const components: AddressComponents = {
+      formatted_address: place.formatted_address || "",
+    };
+    
+    // Map address components to their appropriate fields
+    place.address_components.forEach((component: any) => {
+      if (component.types.includes('street_number')) {
+        components.street_number = component.long_name;
+      } else if (component.types.includes('route')) {
+        components.route = component.long_name;
+      } else if (component.types.includes('locality')) {
+        components.locality = component.long_name;
+      } else if (component.types.includes('administrative_area_level_1')) {
+        components.administrative_area_level_1 = component.short_name;
+      } else if (component.types.includes('postal_code')) {
+        components.postal_code = component.long_name;
+      }
+    });
+    
+    console.log("Extracted address components:", components);
+    return components;
+  };
+
   const getZipCodeFromPlace = (place: any): string | null => {
     if (!place || !place.address_components) {
       console.error("Invalid place object returned");
@@ -136,6 +175,7 @@ export function useGooglePlaces(): GooglePlacesHookResult {
   return {
     placesLoaded,
     setupAutocomplete,
+    getAddressComponents,
     getZipCodeFromPlace,
     quotaExceeded
   };

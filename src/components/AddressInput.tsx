@@ -3,21 +3,22 @@ import React, { useRef, useEffect, useState, ChangeEvent, FormEvent } from "reac
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, MapPin, AlertCircle } from "lucide-react";
-import { useGooglePlaces } from "@/hooks/useGooglePlaces";
+import { useGooglePlaces, AddressComponents } from "@/hooks/useGooglePlaces";
 import { toast } from "sonner";
 
 interface AddressInputProps {
-  onAddressSelect: (address: string, zipCode: string) => void;
+  onAddressSelect: (address: string, zipCode: string, addressComponents?: AddressComponents) => void;
 }
 
 const AddressInput = ({ onAddressSelect }: AddressInputProps) => {
   const [address, setAddress] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [zipCode, setZipCode] = useState("");
+  const [addressComponents, setAddressComponents] = useState<AddressComponents | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<any>(null);
   
-  const { placesLoaded, setupAutocomplete, getZipCodeFromPlace, quotaExceeded } = useGooglePlaces();
+  const { placesLoaded, setupAutocomplete, getAddressComponents, getZipCodeFromPlace, quotaExceeded } = useGooglePlaces();
 
   // Set up Places Autocomplete once the Places API is loaded
   useEffect(() => {
@@ -38,11 +39,16 @@ const AddressInput = ({ onAddressSelect }: AddressInputProps) => {
             return;
           }
           
-          const extractedZipCode = getZipCodeFromPlace(place);
+          // Extract address components
+          const components = getAddressComponents(place);
+          const extractedZipCode = components?.postal_code || getZipCodeFromPlace(place);
           
-          if (extractedZipCode) {
-            // Update the address field to include the ZIP code
-            let formattedAddress = place.formatted_address || "";
+          if (extractedZipCode && components) {
+            // Save address components
+            setAddressComponents(components);
+            
+            // Update the address field to the formatted address
+            let formattedAddress = components.formatted_address || place.formatted_address || "";
             
             // Ensure ZIP code is included in the address display
             if (!formattedAddress.includes(extractedZipCode)) {
@@ -56,7 +62,7 @@ const AddressInput = ({ onAddressSelect }: AddressInputProps) => {
             setZipCode(extractedZipCode);
             
             // Process the address selection
-            handleAddressSelection(formattedAddress, extractedZipCode);
+            handleAddressSelection(formattedAddress, extractedZipCode, components);
           } else {
             toast.error("Couldn't find a ZIP code for this address. Please try another address.");
           }
@@ -78,10 +84,19 @@ const AddressInput = ({ onAddressSelect }: AddressInputProps) => {
   useEffect(() => {
     const storedAddress = sessionStorage.getItem("customerAddress");
     const storedZipCode = sessionStorage.getItem("zipCode");
+    const storedComponents = sessionStorage.getItem("addressComponents");
     
     if (storedAddress && storedZipCode) {
       setAddress(storedAddress);
       setZipCode(storedZipCode);
+      
+      if (storedComponents) {
+        try {
+          setAddressComponents(JSON.parse(storedComponents));
+        } catch (e) {
+          console.error("Error parsing stored address components:", e);
+        }
+      }
     }
   }, []);
 
@@ -94,7 +109,11 @@ const AddressInput = ({ onAddressSelect }: AddressInputProps) => {
     }
   }, []);
 
-  const handleAddressSelection = (selectedAddress: string, selectedZipCode: string) => {
+  const handleAddressSelection = (
+    selectedAddress: string, 
+    selectedZipCode: string, 
+    components?: AddressComponents
+  ) => {
     setIsLoading(true);
     
     // Validate zip code
@@ -102,6 +121,21 @@ const AddressInput = ({ onAddressSelect }: AddressInputProps) => {
       toast.error("Please enter a valid 5-digit ZIP code");
       setIsLoading(false);
       return;
+    }
+
+    // Ensure all required components are present
+    if (components) {
+      const hasStreet = !!(components.street_number && components.route);
+      const hasCity = !!components.locality;
+      const hasState = !!components.administrative_area_level_1;
+      
+      if (!hasStreet || !hasCity || !hasState) {
+        toast.warn("Address may be incomplete. Please check that it contains street, city, and state.");
+      }
+      
+      // Save address components to sessionStorage
+      sessionStorage.setItem("addressComponents", JSON.stringify(components));
+      localStorage.setItem("addressComponents", JSON.stringify(components));
     }
 
     // Ensure ZIP code is included in the displayed address
@@ -112,11 +146,13 @@ const AddressInput = ({ onAddressSelect }: AddressInputProps) => {
     // Save address to sessionStorage
     sessionStorage.setItem("customerAddress", selectedAddress);
     sessionStorage.setItem("zipCode", selectedZipCode);
+    localStorage.setItem("customerAddress", selectedAddress);
+    localStorage.setItem("zipCode", selectedZipCode);
 
     // Submit the address and zip code
     setTimeout(() => {
       setIsLoading(false);
-      onAddressSelect(selectedAddress, selectedZipCode);
+      onAddressSelect(selectedAddress, selectedZipCode, components);
     }, 500);
   };
 
@@ -129,8 +165,8 @@ const AddressInput = ({ onAddressSelect }: AddressInputProps) => {
     }
 
     // If we already have a zip code from autocomplete, use it
-    if (zipCode) {
-      handleAddressSelection(address, zipCode);
+    if (zipCode && addressComponents) {
+      handleAddressSelection(address, zipCode, addressComponents);
       return;
     }
 
@@ -146,7 +182,14 @@ const AddressInput = ({ onAddressSelect }: AddressInputProps) => {
     const extractedZipCode = match[0];
     console.log("ZIP code extracted from manual entry:", extractedZipCode);
     setZipCode(extractedZipCode);
-    handleAddressSelection(address, extractedZipCode);
+    
+    // Create a simple address components object for manual entry
+    const manualComponents: AddressComponents = {
+      postal_code: extractedZipCode,
+      formatted_address: address
+    };
+    
+    handleAddressSelection(address, extractedZipCode, manualComponents);
   };
 
   const handleAddressChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -154,6 +197,7 @@ const AddressInput = ({ onAddressSelect }: AddressInputProps) => {
     // If the text changes, clear the stored zipCode to prevent using stale data
     if (zipCode && !e.target.value.includes(zipCode)) {
       setZipCode("");
+      setAddressComponents(null);
     }
   };
 

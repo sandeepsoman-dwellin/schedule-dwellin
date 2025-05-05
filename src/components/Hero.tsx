@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import AddressSearch from "./AddressSearch";
 import { toast } from "sonner";
@@ -6,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import AddressInput from "./AddressInput";
 import { fetchServices } from "@/hooks/services/api";
+import { AddressComponents } from "@/hooks/useGooglePlaces";
 
 const Hero = forwardRef((props, ref) => {
   const navigate = useNavigate();
@@ -17,8 +17,8 @@ const Hero = forwardRef((props, ref) => {
     handleServiceBookNow
   }));
   
-  const handleAddressSubmit = (zipCode: string) => {
-    console.log("ZIP code submitted:", zipCode);
+  const handleAddressSubmit = (zipCode: string, addressComponents?: AddressComponents) => {
+    console.log("ZIP code submitted:", zipCode, "Components:", addressComponents);
     
     if (!zipCode) {
       toast.error("Please provide a valid address with ZIP code");
@@ -65,6 +65,7 @@ const Hero = forwardRef((props, ref) => {
     // Check if we have address in sessionStorage first (highest priority)
     const storedZipCode = sessionStorage.getItem("zipCode");
     const storedAddress = sessionStorage.getItem("customerAddress");
+    const storedComponents = sessionStorage.getItem("addressComponents");
     
     // Fall back to localStorage if not in sessionStorage
     const localZipCode = localStorage.getItem("zipCode");
@@ -77,6 +78,12 @@ const Hero = forwardRef((props, ref) => {
       // We have address in localStorage, save to sessionStorage and check availability
       sessionStorage.setItem("zipCode", localZipCode);
       sessionStorage.setItem("customerAddress", localAddress);
+      
+      const localComponents = localStorage.getItem("addressComponents");
+      if (localComponents) {
+        sessionStorage.setItem("addressComponents", localComponents);
+      }
+      
       checkServiceAvailability(serviceId, localZipCode);
     } else {
       // No address found, show dialog to collect it
@@ -85,12 +92,18 @@ const Hero = forwardRef((props, ref) => {
     }
   };
   
-  const handleAddressSelect = (address: string, zipCode: string) => {
+  const handleAddressSelect = (address: string, zipCode: string, components?: AddressComponents) => {
     // Save to both sessionStorage and localStorage
     sessionStorage.setItem("customerAddress", address);
     sessionStorage.setItem("zipCode", zipCode);
     localStorage.setItem("customerAddress", address);
     localStorage.setItem("zipCode", zipCode);
+    
+    if (components) {
+      const componentsString = JSON.stringify(components);
+      sessionStorage.setItem("addressComponents", componentsString);
+      localStorage.setItem("addressComponents", componentsString);
+    }
     
     setShowAddressDialog(false);
     
