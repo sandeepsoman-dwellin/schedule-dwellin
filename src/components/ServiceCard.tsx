@@ -7,9 +7,17 @@ import type { Service } from "@/hooks/services";
 interface ServiceCardProps {
   service: Service;
   zipCode: string;
+  onBookNow?: (serviceId: string) => void;
 }
 
-const ServiceCard = ({ service, zipCode }: ServiceCardProps) => {
+const ServiceCard = ({ service, zipCode, onBookNow }: ServiceCardProps) => {
+  const handleBookNowClick = (e: React.MouseEvent) => {
+    if (onBookNow) {
+      e.preventDefault();
+      onBookNow(service.id);
+    }
+  };
+
   return (
     <div className="dwellin-card hover:shadow-lg transition-shadow duration-300">
       <div className="flex flex-col h-full">
@@ -26,12 +34,19 @@ const ServiceCard = ({ service, zipCode }: ServiceCardProps) => {
         </div>
         
         <div className="mt-auto pt-4 border-t border-gray-100">
-          <Link to={`/services/${service.id}?zip=${zipCode}`}>
-            <Button className="w-full bg-dwellin-sky hover:bg-opacity-90 text-white">
+          {onBookNow ? (
+            <Button className="w-full bg-dwellin-sky hover:bg-opacity-90 text-white" onClick={handleBookNowClick}>
               <span>Book Now</span>
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
-          </Link>
+          ) : (
+            <Link to={`/services/${service.id}?zip=${zipCode}`}>
+              <Button className="w-full bg-dwellin-sky hover:bg-opacity-90 text-white">
+                <span>Book Now</span>
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
     </div>

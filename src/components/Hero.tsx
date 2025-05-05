@@ -2,9 +2,20 @@
 import { useNavigate } from "react-router-dom";
 import AddressSearch from "./AddressSearch";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
+import AddressInput from "./AddressInput";
+import { fetchServices } from "@/hooks/services/api";
 
-const Hero = () => {
+const Hero = forwardRef((props, ref) => {
   const navigate = useNavigate();
+  const [showAddressDialog, setShowAddressDialog] = useState(false);
+  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
+  
+  // Expose the handleServiceBookNow method to parent components
+  useImperativeHandle(ref, () => ({
+    handleServiceBookNow
+  }));
   
   const handleAddressSubmit = (zipCode: string) => {
     console.log("ZIP code submitted:", zipCode);
@@ -22,6 +33,71 @@ const Hero = () => {
     
     // Navigate to the services page with the ZIP code
     navigate(`/services?zip=${zipCode}`);
+  };
+
+  const checkServiceAvailability = async (serviceId: string, zipCode: string) => {
+    try {
+      // Fetch services for the given zip code
+      const services = await fetchServices(zipCode);
+      
+      // Check if the requested service is available for this zip code
+      const serviceExists = services.some(service => service.id === serviceId);
+      
+      console.log(`Service ${serviceId} availability check for ZIP ${zipCode}:`, serviceExists);
+      
+      if (serviceExists) {
+        // Service is available, navigate to service detail page
+        navigate(`/services/${serviceId}?zip=${zipCode}`);
+      } else {
+        // Service is not available in this zip code
+        toast.error("This service is not available in your area");
+        navigate(`/unavailable?services=${serviceId}&zip=${zipCode}`);
+      }
+    } catch (error) {
+      console.error("Error checking service availability:", error);
+      toast.error("Failed to check service availability");
+    }
+  };
+
+  const handleServiceBookNow = (serviceId: string) => {
+    console.log("Book Now clicked for service:", serviceId);
+    
+    // Check if we have address in sessionStorage first (highest priority)
+    const storedZipCode = sessionStorage.getItem("zipCode");
+    const storedAddress = sessionStorage.getItem("customerAddress");
+    
+    // Fall back to localStorage if not in sessionStorage
+    const localZipCode = localStorage.getItem("zipCode");
+    const localAddress = localStorage.getItem("customerAddress");
+    
+    if (storedZipCode && storedAddress) {
+      // We have address in sessionStorage, check service availability
+      checkServiceAvailability(serviceId, storedZipCode);
+    } else if (localZipCode && localAddress) {
+      // We have address in localStorage, save to sessionStorage and check availability
+      sessionStorage.setItem("zipCode", localZipCode);
+      sessionStorage.setItem("customerAddress", localAddress);
+      checkServiceAvailability(serviceId, localZipCode);
+    } else {
+      // No address found, show dialog to collect it
+      setSelectedServiceId(serviceId);
+      setShowAddressDialog(true);
+    }
+  };
+  
+  const handleAddressSelect = (address: string, zipCode: string) => {
+    // Save to both sessionStorage and localStorage
+    sessionStorage.setItem("customerAddress", address);
+    sessionStorage.setItem("zipCode", zipCode);
+    localStorage.setItem("customerAddress", address);
+    localStorage.setItem("zipCode", zipCode);
+    
+    setShowAddressDialog(false);
+    
+    // Check service availability if a service was selected
+    if (selectedServiceId) {
+      checkServiceAvailability(selectedServiceId, zipCode);
+    }
   };
 
   return (
@@ -78,8 +154,27 @@ const Hero = () => {
           </div>
         </div>
       </div>
+      
+      {/* Address dialog for service booking */}
+      <Dialog open={showAddressDialog} onOpenChange={setShowAddressDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl">Enter Your Address</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-center text-gray-600 mb-6">
+              Please enter your complete address with ZIP code to continue with booking
+            </p>
+            <AddressInput 
+              onAddressSelect={handleAddressSelect} 
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
-};
+});
+
+Hero.displayName = "Hero";
 
 export default Hero;

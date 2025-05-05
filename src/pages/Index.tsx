@@ -9,20 +9,31 @@ import { Link } from "react-router-dom";
 import { useTestimonials } from "@/hooks/useTestimonials";
 import { useServices } from "@/hooks/useServices";
 import { Skeleton } from "@/components/ui/skeleton";
+import ServiceCard from "@/components/ServiceCard";
 
 const Index = () => {
   const { data: testimonials, isLoading: isLoadingTestimonials } = useTestimonials();
   const { data: services, isLoading: isLoadingServices } = useServices();
-
+  
   // Get the first 3 services for featured display
   const featuredServices = services?.slice(0, 3) || [];
+  
+  // Reference to the Hero component for accessing the handleServiceBookNow method
+  const heroRef = React.useRef<any>(null);
+  
+  const handleBookNowClick = (serviceId: string) => {
+    // Forward the book now click to the Hero component
+    if (heroRef.current && heroRef.current.handleServiceBookNow) {
+      heroRef.current.handleServiceBookNow(serviceId);
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
 
       <main className="flex-grow">
-        <Hero />
+        <Hero ref={heroRef} />
         
         {/* How it works section */}
         <section className="py-20 bg-dwellin-light-gray">
@@ -88,21 +99,12 @@ const Index = () => {
               ) : featuredServices.length > 0 ? (
                 // Display actual services
                 featuredServices.map((service) => (
-                  <div key={service.id} className="dwellin-card">
-                    <h3 className="text-xl font-bold mb-2">{service.name}</h3>
-                    <p className="text-gray-600 mb-4">{service.description}</p>
-                    <div className="flex justify-between items-center mb-4">
-                      <span className="text-2xl font-bold">${service.base_price}</span>
-                      <span className="text-sm bg-dwellin-light-gray px-3 py-1 rounded-full">
-                        {service.category}
-                      </span>
-                    </div>
-                    <Link to={`/services/${service.slug}${location.search}`}>
-                      <Button className="w-full bg-dwellin-sky hover:bg-opacity-90 text-white">
-                        Book Now
-                      </Button>
-                    </Link>
-                  </div>
+                  <ServiceCard 
+                    key={service.id} 
+                    service={service} 
+                    zipCode={""} 
+                    onBookNow={handleBookNowClick}
+                  />
                 ))
               ) : (
                 <div className="col-span-3 text-center py-8">
