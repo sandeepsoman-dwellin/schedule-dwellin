@@ -2,16 +2,11 @@
 import { useMemo } from 'react';
 import { Booking } from '@/hooks/bookings/useBookings';
 
-export const useFilteredBookings = (bookings: Booking[], verifiedPhone: string | null) => {
+export const useFilteredBookings = (bookings: Booking[]) => {
   const filteredBookings = useMemo(() => {
-    console.log('Filtering bookings for phone:', verifiedPhone);
-    console.log('All bookings:', bookings);
-    
-    // Filter bookings by the verified phone number if it exists
-    return verifiedPhone 
-      ? bookings.filter(booking => booking.customer_phone === verifiedPhone)
-      : bookings;
-  }, [bookings, verifiedPhone]);
+    console.log('All bookings in useFilteredBookings:', bookings);
+    return bookings;
+  }, [bookings]);
   
   // Separate upcoming and past bookings
   const currentDate = new Date();
@@ -25,7 +20,7 @@ export const useFilteredBookings = (bookings: Booking[], verifiedPhone: string |
       bookingDate.setHours(0, 0, 0, 0); // Reset time part for accurate date comparison
       
       const isUpcoming = bookingDate >= currentDate;
-      console.log(`Booking ${booking.id} date: ${bookingDate}, is upcoming: ${isUpcoming}`);
+      console.log(`Booking ${booking.id} date: ${bookingDate}, is upcoming: ${isUpcoming}, service: ${JSON.stringify(booking.service)}`);
       
       return isUpcoming;
     }).sort((a, b) => {

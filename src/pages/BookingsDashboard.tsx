@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useBookings } from '@/hooks/bookings/useBookings';
+import { useBookingsByPhone } from '@/hooks/bookings/useBookings';
 import LoadingState from '@/components/booking/LoadingState';
 import ErrorState from '@/components/booking/ErrorState';
 import PhoneVerification from '@/components/booking/PhoneVerification';
@@ -21,7 +21,6 @@ import { toast } from 'sonner';
 const BookingsDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [isVerificationOpen, setIsVerificationOpen] = useState(false);
-  const { data, isLoading, error, refetch } = useBookings();
   
   // Available credits (in a real app, this would be fetched from the API)
   const [availableCredits] = useState<number>(25.00);
@@ -39,12 +38,15 @@ const BookingsDashboard: React.FC = () => {
   );
   
   console.log("BookingsDashboard: Initial verifiedPhone state:", verifiedPhone);
-  console.log("BookingsDashboard: Raw bookings data:", data);
+  
+  // Use the new hook to fetch bookings by phone
+  const { data: bookings, isLoading, error, refetch } = useBookingsByPhone(verifiedPhone);
+  
+  console.log("BookingsDashboard: Raw bookings data:", bookings);
   
   // Filter and segment bookings
   const { upcomingBookings, pastBookings } = useFilteredBookings(
-    data || [], 
-    verifiedPhone
+    bookings || []
   );
   
   // Check for verification on mount
@@ -129,7 +131,7 @@ const BookingsDashboard: React.FC = () => {
     );
   }
   
-  if (error || !data) {
+  if (error) {
     return (
       <div className="flex flex-col min-h-screen">
         <Navbar />

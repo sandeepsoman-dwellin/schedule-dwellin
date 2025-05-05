@@ -26,11 +26,13 @@ export type Booking = {
 // Fetch all bookings
 export const fetchBookings = async (): Promise<Booking[]> => {
   try {
+    console.log("Starting fetchBookings query");
+    
     const { data, error } = await supabase
       .from('bookings')
       .select(`
         *,
-        services (
+        service:services (
           name,
           description,
           base_price
@@ -44,6 +46,7 @@ export const fetchBookings = async (): Promise<Booking[]> => {
       return [];
     }
 
+    console.log("Bookings query results:", data);
     return data || [];
   } catch (error) {
     console.error('Exception in fetchBookings:', error);
@@ -61,7 +64,7 @@ export const fetchBookingById = async (id?: string): Promise<Booking | null> => 
       .from('bookings')
       .select(`
         *,
-        services (
+        service:services (
           name,
           description,
           base_price
@@ -84,6 +87,54 @@ export const fetchBookingById = async (id?: string): Promise<Booking | null> => 
   }
 };
 
+// Fetch bookings by phone number
+export const fetchBookingsByPhone = async (phone?: string): Promise<Booking[]> => {
+  if (!phone) return [];
+  
+  console.log(`Fetching bookings for phone number: ${phone}`);
+  
+  try {
+    const query = supabase
+      .from('bookings')
+      .select(`
+        *,
+        service:services (
+          name,
+          description,
+          base_price
+        )
+      `)
+      .eq('customer_phone', phone)
+      .order('booking_date', { ascending: false });
+    
+    // Log the generated SQL query (in development only)
+    console.log("Generated query:", query);
+    
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching bookings by phone:', error);
+      toast.error('Failed to load your bookings');
+      return [];
+    }
+
+    console.log(`Found ${data?.length || 0} bookings for phone ${phone}:`, data);
+    
+    // Log each booking's service info for debugging
+    if (data && data.length > 0) {
+      data.forEach(booking => {
+        console.log(`Booking ${booking.id} service:`, booking.service);
+      });
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Exception in fetchBookingsByPhone:', error);
+    toast.error('An unexpected error occurred');
+    return [];
+  }
+};
+
 // Hook to get all bookings
 export const useBookings = () => {
   return useQuery({
@@ -98,5 +149,14 @@ export const useBookingDetail = (id?: string) => {
     queryKey: ['booking', id],
     queryFn: () => fetchBookingById(id),
     enabled: !!id
+  });
+};
+
+// Hook to get bookings by phone number
+export const useBookingsByPhone = (phone?: string) => {
+  return useQuery({
+    queryKey: ['bookingsByPhone', phone],
+    queryFn: () => fetchBookingsByPhone(phone),
+    enabled: !!phone
   });
 };
