@@ -18,16 +18,19 @@ const BookingsTabs: React.FC<BookingsTabsProps> = ({
   onReschedule, 
   onCancel 
 }) => {
+  console.log('BookingsTabs: Rendering with upcoming bookings count:', upcomingBookings.length);
+  console.log('BookingsTabs: Rendering with past bookings count:', pastBookings.length);
+  
   return (
     <Tabs defaultValue="upcoming" className="w-full">
       <TabsList className="mb-6">
         <TabsTrigger value="upcoming" className="flex items-center gap-2">
           <Calendar className="h-4 w-4" />
-          Upcoming Appointments
+          Upcoming Appointments ({upcomingBookings.length})
         </TabsTrigger>
         <TabsTrigger value="history" className="flex items-center gap-2">
           <Clock className="h-4 w-4" />
-          Booking History
+          Booking History ({pastBookings.length})
         </TabsTrigger>
       </TabsList>
       

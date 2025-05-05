@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBookings } from '@/hooks/bookings/useBookings';
-import { Card } from '@/components/ui/card';
 import LoadingState from '@/components/booking/LoadingState';
 import ErrorState from '@/components/booking/ErrorState';
 import PhoneVerification from '@/components/booking/PhoneVerification';
@@ -13,11 +12,11 @@ import BookingsEmptyState from '@/components/booking/BookingsEmptyState';
 import BookingsTabs from '@/components/booking/BookingsTabs';
 import CreditsDisplay from '@/components/booking/CreditsDisplay';
 import { rescheduleBooking, cancelBooking, getAvailableTimeSlots } from '@/hooks/bookings/bookingApi';
-import { toast } from 'sonner';
 import { Booking } from '@/hooks/bookings/useBookings';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useFilteredBookings } from '@/hooks/bookings/useFilteredBookings';
+import { toast } from 'sonner';
 
 const BookingsDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -35,7 +34,12 @@ const BookingsDashboard: React.FC = () => {
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([]);
   
   // Get the verified phone
-  const verifiedPhone = localStorage.getItem("verifiedPhone");
+  const [verifiedPhone, setVerifiedPhone] = useState<string | null>(
+    localStorage.getItem("verifiedPhone")
+  );
+  
+  console.log("BookingsDashboard: Initial verifiedPhone state:", verifiedPhone);
+  console.log("BookingsDashboard: Raw bookings data:", data);
   
   // Filter and segment bookings
   const { upcomingBookings, pastBookings } = useFilteredBookings(
@@ -55,6 +59,7 @@ const BookingsDashboard: React.FC = () => {
   
   const handleVerificationComplete = (phone: string) => {
     console.log("BookingsDashboard: Verification completed with phone:", phone);
+    setVerifiedPhone(phone);
     setIsVerificationOpen(false);
     refetch(); // Refresh the bookings data after verification
   };
@@ -81,9 +86,15 @@ const BookingsDashboard: React.FC = () => {
   };
   
   const handleRescheduleConfirm = async (bookingId: string, date: Date, timeSlot: string) => {
-    const success = await rescheduleBooking(bookingId, date, timeSlot);
-    if (success) {
-      refetch();
+    try {
+      const success = await rescheduleBooking(bookingId, date, timeSlot);
+      if (success) {
+        toast.success("Your preferences have been communicated to the provider. If there's a conflict, they'll get in touch with you.");
+        refetch();
+      }
+    } catch (error) {
+      console.error('Error rescheduling booking:', error);
+      toast.error('Failed to reschedule appointment');
     }
   };
   
@@ -94,9 +105,14 @@ const BookingsDashboard: React.FC = () => {
   };
   
   const handleCancelConfirm = async (bookingId: string) => {
-    const success = await cancelBooking(bookingId);
-    if (success) {
-      refetch();
+    try {
+      const success = await cancelBooking(bookingId);
+      if (success) {
+        refetch();
+      }
+    } catch (error) {
+      console.error('Error canceling booking:', error);
+      toast.error('Failed to cancel appointment');
     }
   };
   
@@ -127,10 +143,6 @@ const BookingsDashboard: React.FC = () => {
     );
   }
   
-  const filteredBookings = verifiedPhone 
-    ? data.filter(booking => booking.customer_phone === verifiedPhone)
-    : data;
-  
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
@@ -143,7 +155,7 @@ const BookingsDashboard: React.FC = () => {
             <CreditsDisplay availableCredits={availableCredits} />
           </div>
           
-          {filteredBookings.length === 0 ? (
+          {upcomingBookings.length === 0 && pastBookings.length === 0 ? (
             <BookingsEmptyState />
           ) : (
             <BookingsTabs 
