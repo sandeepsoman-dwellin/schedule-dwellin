@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -22,15 +23,8 @@ const Navbar = () => {
   const handleBookingsClick = (e: React.MouseEvent) => {
     e.preventDefault(); // Prevent default navigation
     
-    // Always check if user is already verified
-    const verifiedPhone = localStorage.getItem("verifiedPhone");
-    if (verifiedPhone) {
-      // If already verified, navigate directly
-      navigate("/bookings");
-    } else {
-      // Otherwise, show verification dialog
-      setIsVerificationOpen(true);
-    }
+    // Always show the verification dialog per the updated requirement
+    setIsVerificationOpen(true);
   };
   
   return (

@@ -51,6 +51,7 @@ const BookingsDashboard: React.FC = () => {
   useEffect(() => {
     console.log("BookingsDashboard: Checking for verified phone:", verifiedPhone);
     
+    // Always show verification dialog when accessing the page
     if (!verifiedPhone) {
       console.log("BookingsDashboard: No verified phone, showing verification dialog");
       setIsVerificationOpen(true);
