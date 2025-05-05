@@ -46,11 +46,12 @@ const CancelBookingDialog: React.FC<CancelBookingDialogProps> = ({
         <AlertDialogHeader>
           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will cancel your scheduled appointment. This action cannot be undone.
+            This will cancel your scheduled appointment. You'll be asked to provide a reason for cancellation. 
+            Once cancelled, your credit card authorization will be dropped.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isSubmitting}>Go Back</AlertDialogCancel>
           <AlertDialogAction 
             onClick={(e) => {
               e.preventDefault();
@@ -59,7 +60,7 @@ const CancelBookingDialog: React.FC<CancelBookingDialogProps> = ({
             disabled={isSubmitting}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {isSubmitting ? 'Processing...' : 'Yes, cancel appointment'}
+            {isSubmitting ? 'Processing...' : 'Continue to Cancel'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

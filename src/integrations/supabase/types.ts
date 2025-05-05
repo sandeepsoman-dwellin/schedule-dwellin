@@ -13,6 +13,7 @@ export type Database = {
         Row: {
           address: string | null
           booking_date: string
+          cancellation_reason: string | null
           created_at: string
           customer_email: string
           customer_name: string
@@ -31,6 +32,7 @@ export type Database = {
         Insert: {
           address?: string | null
           booking_date: string
+          cancellation_reason?: string | null
           created_at?: string
           customer_email: string
           customer_name: string
@@ -49,6 +51,7 @@ export type Database = {
         Update: {
           address?: string | null
           booking_date?: string
+          cancellation_reason?: string | null
           created_at?: string
           customer_email?: string
           customer_name?: string

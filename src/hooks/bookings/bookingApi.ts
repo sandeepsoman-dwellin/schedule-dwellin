@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -127,9 +128,11 @@ export const rescheduleBooking = async (
       .update({
         booking_date: formattedDate,
         time_slot: newTimeSlot,
+        status: 'pending', // Set status to pending for rescheduled bookings
         updated_at: new Date().toISOString()
       })
-      .eq('id', bookingId);
+      .eq('id', bookingId)
+      .select();
     
     if (error) {
       console.error('Error rescheduling booking:', error);
@@ -147,15 +150,17 @@ export const rescheduleBooking = async (
   }
 };
 
-export const cancelBooking = async (bookingId: string): Promise<boolean> => {
+export const cancelBooking = async (bookingId: string, cancellationReason: string): Promise<boolean> => {
   try {
     const { data, error } = await supabase
       .from('bookings')
       .update({
         status: 'cancelled',
+        cancellation_reason: cancellationReason,
         updated_at: new Date().toISOString()
       })
-      .eq('id', bookingId);
+      .eq('id', bookingId)
+      .select();
     
     if (error) {
       console.error('Error cancelling booking:', error);
@@ -164,7 +169,6 @@ export const cancelBooking = async (bookingId: string): Promise<boolean> => {
     }
     
     console.log('Booking cancelled successfully:', data);
-    toast.success('Appointment cancelled successfully');
     return true;
   } catch (error) {
     console.error('Exception in cancelBooking:', error);
@@ -177,18 +181,38 @@ export const getAvailableTimeSlots = async (date: Date): Promise<string[]> => {
   try {
     const formattedDate = date.toISOString().split('T')[0];
     
-    // In a real app, this would fetch from time_slot_availability table
-    // For now, returning a static list of time slots
-    const defaultTimeSlots = [
+    // Get booked time slots for the date
+    const { data: bookedSlots, error: bookedError } = await supabase
+      .from('bookings')
+      .select('time_slot')
+      .eq('booking_date', formattedDate)
+      .in('status', ['confirmed', 'pending']);
+    
+    if (bookedError) {
+      console.error('Error fetching booked time slots:', bookedError);
+    }
+    
+    // Define all available time slots
+    const allTimeSlots = [
       '9:00 AM - 11:00 AM',
       '11:00 AM - 1:00 PM',
       '1:00 PM - 3:00 PM',
       '3:00 PM - 5:00 PM'
     ];
     
-    return defaultTimeSlots;
+    // Filter out booked slots
+    const bookedTimeSlots = bookedSlots ? bookedSlots.map(slot => slot.time_slot) : [];
+    const availableSlots = allTimeSlots.filter(slot => !bookedTimeSlots.includes(slot));
+    
+    console.log('Available time slots:', availableSlots);
+    return availableSlots.length > 0 ? availableSlots : allTimeSlots;
   } catch (error) {
     console.error('Exception in getAvailableTimeSlots:', error);
-    return [];
+    return [
+      '9:00 AM - 11:00 AM',
+      '11:00 AM - 1:00 PM',
+      '1:00 PM - 3:00 PM',
+      '3:00 PM - 5:00 PM'
+    ];
   }
 };
