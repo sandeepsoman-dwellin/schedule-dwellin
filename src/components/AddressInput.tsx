@@ -130,7 +130,7 @@ const AddressInput = ({ onAddressSelect }: AddressInputProps) => {
       const hasState = !!components.administrative_area_level_1;
       
       if (!hasStreet || !hasCity || !hasState) {
-        toast.warn("Address may be incomplete. Please check that it contains street, city, and state.");
+        toast.warning("Address may be incomplete. Please check that it contains street, city, and state.");
       }
       
       // Save address components to sessionStorage
