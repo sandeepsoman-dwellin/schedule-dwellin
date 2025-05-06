@@ -54,8 +54,8 @@ export function useAddressAutocomplete({
         const place = event.detail.place;
         console.log("Place selected from event:", place);
         
-        if (!place.geometry) {
-          console.warn("No geometry returned for this place");
+        if (!place) {
+          console.warn("No place returned from event");
           return;
         }
         

@@ -114,11 +114,10 @@ export function useGooglePlaces(): GooglePlacesHookResult {
         container.innerHTML = '';
       }
       
-      // Create the PlaceAutocompleteElement
+      // Create the PlaceAutocompleteElement without the unsupported 'fields' property
       const placeAutocompleteElement = new window.google.maps.places.PlaceAutocompleteElement({
         types: ['address'],
-        componentRestrictions: { country: 'us' },
-        fields: ['address_components', 'formatted_address', 'geometry'],
+        componentRestrictions: { country: 'us' }
       });
       
       // Add the element to the DOM
