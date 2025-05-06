@@ -31,17 +31,16 @@ export interface GooglePlacesHookResult {
 export function useGooglePlaces(): GooglePlacesHookResult {
   const [placesLoaded, setPlacesLoaded] = useState(false);
   const [quotaExceeded, setQuotaExceeded] = useState(false);
-  const googleScriptRef = useRef<boolean>(false);
+  const googleScriptRef = useRef<HTMLScriptElement | null>(null);
+  const googleApiLoadingRef = useRef(false);
   const autocompleteRef = useRef<any>(null);
   const originalConsoleError = console.error;
 
   // Initialize Google Maps Places API
   useEffect(() => {
     // Only run this effect once
-    if (googleScriptRef.current) return;
-    
-    // Mark that we've started loading the script
-    googleScriptRef.current = true;
+    if (googleApiLoadingRef.current) return;
+    googleApiLoadingRef.current = true;
     
     // If already loaded, just set the state
     if (window.google?.maps?.places) {
@@ -66,12 +65,13 @@ export function useGooglePlaces(): GooglePlacesHookResult {
       setPlacesLoaded(true);
     };
     
-    // Create the script tag
+    // Create the script tag with proper async attribute
     const script = document.createElement('script');
     script.id = 'google-maps-script';
     script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyC0PUwthcVcCMlhVPbpoCRtEeW0HQgWmbQ&libraries=places&callback=initGoogleMaps`;
     script.async = true;
     script.defer = true;
+    googleScriptRef.current = script;
     
     // Handle script loading errors
     script.onerror = () => {
@@ -87,10 +87,9 @@ export function useGooglePlaces(): GooglePlacesHookResult {
       // Restore original console.error
       console.error = originalConsoleError;
       
-      // Check if script exists before trying to remove it
-      const scriptElement = document.getElementById('google-maps-script');
-      if (scriptElement) {
-        scriptElement.remove();
+      // Remove the script from the DOM
+      if (googleScriptRef.current && googleScriptRef.current.parentNode) {
+        googleScriptRef.current.parentNode.removeChild(googleScriptRef.current);
       }
       
       // Only delete the callback if we're truly unmounting
@@ -115,19 +114,29 @@ export function useGooglePlaces(): GooglePlacesHookResult {
       }
       
       // Create the PlaceAutocompleteElement with proper configuration
-      const placeAutocompleteElement = new window.google.maps.places.PlaceAutocompleteElement({
-        types: ['address'],
-        componentRestrictions: { country: 'us' }
-      });
+      const placeAutocompleteElement = document.createElement("gmpx-place-autocomplete-element");
+      placeAutocompleteElement.setAttribute("input-placeholder", "Enter your address");
+      placeAutocompleteElement.setAttribute("button-label", "Search");
+      placeAutocompleteElement.setAttribute("input-label", "");
+      
+      // Set restrictions to USA addresses only
+      placeAutocompleteElement.setAttribute("restrictions", JSON.stringify({
+        country: "us",
+        type: "address"
+      }));
       
       // Add the element to the DOM
       container.appendChild(placeAutocompleteElement);
+      
+      // Style the element
+      placeAutocompleteElement.style.width = "100%";
+      placeAutocompleteElement.style.display = "block";
       
       // Store reference for cleanup
       autocompleteRef.current = placeAutocompleteElement;
       
       // Set up event listener for place selection
-      placeAutocompleteElement.addEventListener('place_changed', async (event: any) => {
+      placeAutocompleteElement.addEventListener('place_changed', (event: any) => {
         if (!event || !event.detail || !event.detail.place) {
           console.warn("No place data received from event");
           return;

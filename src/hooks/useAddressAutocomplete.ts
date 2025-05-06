@@ -21,6 +21,7 @@ export function useAddressAutocomplete({
   // Create a div container for the autocomplete element
   const containerRef = useRef<HTMLDivElement | null>(null);
   const { placesLoaded, setupPlaceAutocomplete, getAddressComponents, getZipCodeFromPlace, quotaExceeded } = useGooglePlaces();
+  const [autocompleteInitialized, setAutocompleteInitialized] = useState(false);
   
   // Create a container element for the PlaceAutocompleteElement
   useEffect(() => {
@@ -43,11 +44,12 @@ export function useAddressAutocomplete({
   
   // Set up Places Autocomplete once the Places API is loaded
   useEffect(() => {
-    if (!placesLoaded || !containerRef.current || quotaExceeded) return;
+    if (!placesLoaded || !containerRef.current || quotaExceeded || autocompleteInitialized) return;
     
     try {
       // Setup the PlaceAutocompleteElement
       setupPlaceAutocomplete(containerRef.current, inputRef);
+      setAutocompleteInitialized(true);
       
       // Listen for the place_changed event on the container
       const placeChangedListener = (event: any) => {
@@ -142,8 +144,9 @@ export function useAddressAutocomplete({
       };
     } catch (error) {
       console.error("Error setting up PlaceAutocompleteElement:", error);
+      setAutocompleteInitialized(false);
     }
-  }, [placesLoaded, quotaExceeded, containerRef, inputRef, setAddress, setZipCode, setAddressComponents, handleAddressSelection, getAddressComponents, getZipCodeFromPlace, setupPlaceAutocomplete]);
+  }, [placesLoaded, quotaExceeded, containerRef, inputRef, setAddress, setZipCode, setAddressComponents, handleAddressSelection, getAddressComponents, getZipCodeFromPlace, setupPlaceAutocomplete, autocompleteInitialized]);
 
   // When the component mounts, focus the input field for better UX
   useEffect(() => {
@@ -152,6 +155,13 @@ export function useAddressAutocomplete({
         inputRef.current?.focus();
       }, 500);
     }
+  }, [inputRef]);
+
+  // Reset the initialization state when dependencies change
+  useEffect(() => {
+    return () => {
+      setAutocompleteInitialized(false);
+    };
   }, [inputRef]);
 
   return {

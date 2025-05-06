@@ -1,5 +1,5 @@
 
-import React, { useRef, useEffect } from "react";
+import React, { useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { MapPin, Search, AlertCircle } from "lucide-react";
@@ -25,54 +25,78 @@ const AddressInputForm: React.FC<AddressInputFormProps> = ({
   quotaExceeded,
   containerRef
 }) => {
-  const autocompleteWrapperRef = useRef<HTMLDivElement>(null);
+  // Reference for the autocomplete position wrapper
+  const autocompletePositionRef = useRef<HTMLDivElement>(null);
   
-  // Effect to position and style the autocomplete container properly
-  useEffect(() => {
-    if (!containerRef?.current || !autocompleteWrapperRef.current) return;
-    
-    // Clear any previous content
-    autocompleteWrapperRef.current.innerHTML = '';
-    
-    // Append the autocomplete container to our wrapper div
-    autocompleteWrapperRef.current.appendChild(containerRef.current);
-    
-    // Style the Google autocomplete element correctly
-    const placeElement = containerRef.current.querySelector('gmpx-place-autocomplete-element');
-    if (placeElement) {
-      // Apply styling to the element
-      const element = placeElement as HTMLElement;
-      element.style.width = '100%';
-      element.style.display = 'block';
-      element.style.zIndex = '50';
+  // Function to handle elements when they mount
+  React.useEffect(() => {
+    // If we have a containerRef and its current, and we have a position ref, set up the autocomplete
+    if (containerRef?.current && autocompletePositionRef.current && placesLoaded && !quotaExceeded) {
+      // Clear previous contents
+      if (autocompletePositionRef.current.firstChild !== containerRef.current) {
+        autocompletePositionRef.current.innerHTML = '';
+        autocompletePositionRef.current.appendChild(containerRef.current);
+      }
       
-      // Target the shadow DOM to style the input within
-      setTimeout(() => {
-        const shadowRoot = element.shadowRoot;
-        if (shadowRoot) {
-          // Add custom styles to the shadow DOM
-          const style = document.createElement('style');
-          style.textContent = `
-            .pac-container {
-              width: 100% !important;
-              box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-              border-radius: 0.375rem;
-              border: 1px solid #e2e8f0;
-              z-index: 50;
-              background-color: white;
-            }
-            input {
-              display: none !important;
-            }
-            .pac-logo:after {
-              display: none !important;
-            }
-          `;
-          shadowRoot.appendChild(style);
-        }
-      }, 100);
+      // Find the custom element within the container
+      const autocompleteElement = containerRef.current.querySelector('gmpx-place-autocomplete-element');
+      
+      if (autocompleteElement) {
+        // Apply essential styles to make it work with our form design
+        const element = autocompleteElement as HTMLElement;
+        
+        // Hide the input field from the autocomplete element as we're using our own
+        const styleTag = document.createElement('style');
+        styleTag.textContent = `
+          gmpx-place-autocomplete-element::part(input-container) {
+            display: none !important;
+          }
+
+          gmpx-place-autocomplete-element::part(suggestions-container) {
+            position: absolute !important;
+            top: 100% !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            max-height: 300px !important;
+            overflow-y: auto !important;
+            z-index: 1000 !important;
+            background-color: white !important;
+            border: 1px solid #e2e8f0 !important;
+            border-top: none !important;
+            border-radius: 0 0 0.375rem 0.375rem !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+          }
+
+          gmpx-place-autocomplete-element::part(suggestion) {
+            padding: 8px 12px !important;
+            cursor: pointer !important;
+          }
+
+          gmpx-place-autocomplete-element::part(suggestion):hover {
+            background-color: #f7fafc !important;
+          }
+
+          gmpx-place-autocomplete-element::part(button) {
+            display: none !important;
+          }
+
+          .pac-logo:after {
+            display: none !important;
+          }
+        `;
+
+        // Add the style to the document head
+        document.head.appendChild(styleTag);
+        
+        // Make sure the element is visible and properly sized
+        element.style.width = '100%';
+        element.style.display = 'block';
+        element.style.position = 'relative';
+        element.style.zIndex = '50';
+      }
     }
-  }, [containerRef, placesLoaded]);
+  }, [containerRef, autocompletePositionRef, placesLoaded, quotaExceeded]);
 
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-md mx-auto relative">
@@ -88,6 +112,17 @@ const AddressInputForm: React.FC<AddressInputFormProps> = ({
           className="pl-10 py-6 text-base"
           required
           ref={inputRef}
+          onClick={() => {
+            // Trigger focus on the input to show autocomplete results
+            const autocompleteParts = containerRef?.current?.querySelector('gmpx-place-autocomplete-element');
+            if (autocompleteParts) {
+              // Focus any input field within the autocomplete element
+              const inputField = (autocompleteParts as HTMLElement).querySelector('input');
+              if (inputField) {
+                inputField.focus();
+              }
+            }
+          }}
         />
         {!placesLoaded && !quotaExceeded && (
           <div className="absolute inset-y-0 right-12 flex items-center">
@@ -107,8 +142,8 @@ const AddressInputForm: React.FC<AddressInputFormProps> = ({
         </Button>
       </div>
       
-      {/* Container for Google Places autocomplete suggestions */}
-      <div ref={autocompleteWrapperRef} className="absolute left-0 right-0 z-40"></div>
+      {/* Position container for Google Places autocomplete suggestions */}
+      <div ref={autocompletePositionRef} className="absolute left-0 right-0 z-40"></div>
       
       {quotaExceeded && (
         <div className="mt-2 flex items-center text-amber-600">
