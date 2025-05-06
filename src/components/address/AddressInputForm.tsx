@@ -25,51 +25,52 @@ const AddressInputForm: React.FC<AddressInputFormProps> = ({
   quotaExceeded,
   containerRef
 }) => {
-  const autocompleteContainerRef = useRef<HTMLDivElement>(null);
+  const autocompleteWrapperRef = useRef<HTMLDivElement>(null);
   
-  // Effect to append the Google autocomplete UI to our form
+  // Effect to position and style the autocomplete container properly
   useEffect(() => {
-    // Check if both refs exist and are populated
-    if (autocompleteContainerRef.current && containerRef?.current) {
-      // Move the Google autocomplete element into our visible container
-      const target = autocompleteContainerRef.current;
-      target.innerHTML = '';
+    if (!containerRef?.current || !autocompleteWrapperRef.current) return;
+    
+    // Clear any previous content
+    autocompleteWrapperRef.current.innerHTML = '';
+    
+    // Append the autocomplete container to our wrapper div
+    autocompleteWrapperRef.current.appendChild(containerRef.current);
+    
+    // Style the Google autocomplete element correctly
+    const placeElement = containerRef.current.querySelector('gmpx-place-autocomplete-element');
+    if (placeElement) {
+      // Apply styling to the element
+      const element = placeElement as HTMLElement;
+      element.style.width = '100%';
+      element.style.display = 'block';
+      element.style.zIndex = '50';
       
-      // Position the container properly and make it visible
-      if (containerRef.current) {
-        // Apply proper styling to the container
-        containerRef.current.style.display = 'block';
-        containerRef.current.style.position = 'relative';
-        containerRef.current.style.width = '100%';
-        
-        // Add the element to our visible container
-        target.appendChild(containerRef.current);
-      }
-    }
-  }, [containerRef, placesLoaded]);
-  
-  // Make sure the PlaceAutocompleteElement has proper styling
-  useEffect(() => {
-    if (containerRef?.current) {
-      const placeElement = containerRef.current.querySelector('gmpx-place-autocomplete-element');
-      
-      if (placeElement) {
-        // Apply proper styling to make it fit the design
-        (placeElement as HTMLElement).style.width = '100%';
-        (placeElement as HTMLElement).style.boxShadow = 'none';
-        (placeElement as HTMLElement).style.borderRadius = '0';
-        (placeElement as HTMLElement).style.zIndex = '50';
-        
-        // Find and style the inner input if possible
-        const inputElement = placeElement.shadowRoot?.querySelector('input');
-        if (inputElement) {
-          inputElement.style.width = '100%';
-          inputElement.style.height = '40px';
-          inputElement.style.padding = '0.75rem';
-          inputElement.style.paddingLeft = '2.5rem';
-          inputElement.style.borderRadius = '0.375rem';
+      // Target the shadow DOM to style the input within
+      setTimeout(() => {
+        const shadowRoot = element.shadowRoot;
+        if (shadowRoot) {
+          // Add custom styles to the shadow DOM
+          const style = document.createElement('style');
+          style.textContent = `
+            .pac-container {
+              width: 100% !important;
+              box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+              border-radius: 0.375rem;
+              border: 1px solid #e2e8f0;
+              z-index: 50;
+              background-color: white;
+            }
+            input {
+              display: none !important;
+            }
+            .pac-logo:after {
+              display: none !important;
+            }
+          `;
+          shadowRoot.appendChild(style);
         }
-      }
+      }, 100);
     }
   }, [containerRef, placesLoaded]);
 
@@ -106,8 +107,8 @@ const AddressInputForm: React.FC<AddressInputFormProps> = ({
         </Button>
       </div>
       
-      {/* Container for the Google Place Autocomplete Element */}
-      <div ref={autocompleteContainerRef} className="absolute left-0 right-0 mt-0 bg-white z-40 shadow-md rounded-b-md"></div>
+      {/* Container for Google Places autocomplete suggestions */}
+      <div ref={autocompleteWrapperRef} className="absolute left-0 right-0 z-40"></div>
       
       {quotaExceeded && (
         <div className="mt-2 flex items-center text-amber-600">

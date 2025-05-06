@@ -101,7 +101,7 @@ export function useGooglePlaces(): GooglePlacesHookResult {
   }, []);
 
   const setupPlaceAutocomplete = (container: HTMLDivElement, inputRef: React.RefObject<HTMLInputElement>) => {
-    if (!placesLoaded || !container || !window.google?.maps?.places?.PlaceAutocompleteElement) {
+    if (!placesLoaded || !container || !window.google?.maps?.places) {
       console.log("Places API not loaded yet or container element not available");
       return;
     }
@@ -110,11 +110,11 @@ export function useGooglePlaces(): GooglePlacesHookResult {
       console.log("Setting up Places PlaceAutocompleteElement");
       
       // Clean up any existing autocomplete
-      if (autocompleteRef.current) {
-        container.innerHTML = '';
+      while (container.firstChild) {
+        container.removeChild(container.firstChild);
       }
       
-      // Create the PlaceAutocompleteElement - no fields property as it's unsupported
+      // Create the PlaceAutocompleteElement with proper configuration
       const placeAutocompleteElement = new window.google.maps.places.PlaceAutocompleteElement({
         types: ['address'],
         componentRestrictions: { country: 'us' }

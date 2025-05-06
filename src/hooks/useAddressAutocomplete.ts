@@ -18,20 +18,20 @@ export function useAddressAutocomplete({
   setAddressComponents,
   handleAddressSelection
 }: UseAddressAutocompleteProps) {
+  // Create a div container for the autocomplete element
   const containerRef = useRef<HTMLDivElement | null>(null);
   const { placesLoaded, setupPlaceAutocomplete, getAddressComponents, getZipCodeFromPlace, quotaExceeded } = useGooglePlaces();
-  const [containerElement, setContainerElement] = useState<HTMLDivElement | null>(null);
   
   // Create a container element for the PlaceAutocompleteElement
   useEffect(() => {
     if (!containerRef.current) {
       const container = document.createElement('div');
       container.id = 'place-autocomplete-container';
-      container.style.display = 'none'; // Hide it initially
-      document.body.appendChild(container);
+      container.style.position = 'absolute';
+      container.style.width = '100%';
+      container.style.zIndex = '50';
       
       containerRef.current = container;
-      setContainerElement(container);
       
       return () => {
         if (container.parentNode) {
@@ -43,11 +43,11 @@ export function useAddressAutocomplete({
   
   // Set up Places Autocomplete once the Places API is loaded
   useEffect(() => {
-    if (!placesLoaded || !containerElement || quotaExceeded) return;
+    if (!placesLoaded || !containerRef.current || quotaExceeded) return;
     
     try {
       // Setup the PlaceAutocompleteElement
-      setupPlaceAutocomplete(containerElement, inputRef);
+      setupPlaceAutocomplete(containerRef.current, inputRef);
       
       // Listen for the place_changed event on the container
       const placeChangedListener = (event: any) => {
@@ -131,15 +131,19 @@ export function useAddressAutocomplete({
         handleAddressSelection(formattedAddress, extractedZipCode, components);
       };
       
-      containerElement.addEventListener('place_changed', placeChangedListener);
+      if (containerRef.current) {
+        containerRef.current.addEventListener('place_changed', placeChangedListener);
+      }
       
       return () => {
-        containerElement.removeEventListener('place_changed', placeChangedListener);
+        if (containerRef.current) {
+          containerRef.current.removeEventListener('place_changed', placeChangedListener);
+        }
       };
     } catch (error) {
       console.error("Error setting up PlaceAutocompleteElement:", error);
     }
-  }, [placesLoaded, quotaExceeded, containerElement, inputRef, setAddress, setZipCode, setAddressComponents, handleAddressSelection, getAddressComponents, getZipCodeFromPlace, setupPlaceAutocomplete]);
+  }, [placesLoaded, quotaExceeded, containerRef, inputRef, setAddress, setZipCode, setAddressComponents, handleAddressSelection, getAddressComponents, getZipCodeFromPlace, setupPlaceAutocomplete]);
 
   // When the component mounts, focus the input field for better UX
   useEffect(() => {
