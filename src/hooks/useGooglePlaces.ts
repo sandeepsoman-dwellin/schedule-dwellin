@@ -101,8 +101,8 @@ export function useGooglePlaces(): GooglePlacesHookResult {
   }, []);
 
   const setupPlaceAutocomplete = (container: HTMLDivElement, inputRef: React.RefObject<HTMLInputElement>) => {
-    if (!placesLoaded || !container) {
-      console.log("Places not loaded yet or container element not available");
+    if (!placesLoaded || !container || !window.google?.maps?.places?.PlaceAutocompleteElement) {
+      console.log("Places API not loaded yet or container element not available");
       return;
     }
     
@@ -114,7 +114,7 @@ export function useGooglePlaces(): GooglePlacesHookResult {
         container.innerHTML = '';
       }
       
-      // Create the PlaceAutocompleteElement without the unsupported 'fields' property
+      // Create the PlaceAutocompleteElement - no fields property as it's unsupported
       const placeAutocompleteElement = new window.google.maps.places.PlaceAutocompleteElement({
         types: ['address'],
         componentRestrictions: { country: 'us' }
@@ -127,18 +127,18 @@ export function useGooglePlaces(): GooglePlacesHookResult {
       autocompleteRef.current = placeAutocompleteElement;
       
       // Set up event listener for place selection
-      placeAutocompleteElement.addEventListener('place_changed', (event: any) => {
-        const place = event.detail.place;
-        console.log("Place selected:", place);
-        
-        if (!place.geometry) {
-          console.warn("No geometry returned for this place");
+      placeAutocompleteElement.addEventListener('place_changed', async (event: any) => {
+        if (!event || !event.detail || !event.detail.place) {
+          console.warn("No place data received from event");
           return;
         }
         
+        const place = event.detail.place;
+        console.log("Place selected:", place);
+        
         // If we have an input reference, update its value with the formatted address
-        if (inputRef.current) {
-          inputRef.current.value = place.formatted_address || "";
+        if (inputRef.current && place.formattedAddress) {
+          inputRef.current.value = place.formattedAddress;
           
           // Manually trigger an input event to update React state
           const inputEvent = new Event('input', { bubbles: true });
@@ -154,51 +154,67 @@ export function useGooglePlaces(): GooglePlacesHookResult {
   };
 
   const getAddressComponents = (place: any): AddressComponents | null => {
-    if (!place || !place.address_components) {
+    if (!place) {
       console.error("Invalid place object returned");
       return null;
     }
     
+    // For PlaceAutocompleteElement, we need to parse differently than the old API
     const components: AddressComponents = {
-      formatted_address: place.formatted_address || "",
+      formatted_address: place.formattedAddress || "",
     };
     
-    // Map address components to their appropriate fields
-    place.address_components.forEach((component: any) => {
-      if (component.types.includes('street_number')) {
-        components.street_number = component.long_name;
-      } else if (component.types.includes('route')) {
-        components.route = component.long_name;
-      } else if (component.types.includes('locality')) {
-        components.locality = component.long_name;
-      } else if (component.types.includes('administrative_area_level_1')) {
-        components.administrative_area_level_1 = component.short_name;
-      } else if (component.types.includes('postal_code')) {
-        components.postal_code = component.long_name;
-      } else if (component.types.includes('country')) {
-        components.country = component.short_name;
-      }
-    });
+    // PlaceAutocompleteElement returns data in a different format than Autocomplete
+    if (place.addressComponents) {
+      place.addressComponents.forEach((component: any) => {
+        const types = component.types || [];
+        if (types.includes('street_number')) {
+          components.street_number = component.longText;
+        } else if (types.includes('route')) {
+          components.route = component.longText;
+        } else if (types.includes('locality')) {
+          components.locality = component.longText;
+        } else if (types.includes('administrative_area_level_1')) {
+          components.administrative_area_level_1 = component.shortText;
+        } else if (types.includes('postal_code')) {
+          components.postal_code = component.longText;
+        } else if (types.includes('country')) {
+          components.country = component.shortText;
+        }
+      });
+    }
     
     console.log("Extracted address components:", components);
     return components;
   };
 
   const getZipCodeFromPlace = (place: any): string | null => {
-    if (!place || !place.address_components) {
+    if (!place) {
       console.error("Invalid place object returned");
       return null;
     }
     
-    // Extract the zipcode (postal_code) from address components
-    const zipCodeComponent = place.address_components.find(
-      (component: any) => component.types.includes('postal_code')
-    );
+    // Try to extract zip code from addressComponents
+    if (place.addressComponents) {
+      const zipCodeComponent = place.addressComponents.find(
+        (component: any) => component.types && component.types.includes('postal_code')
+      );
+      
+      if (zipCodeComponent) {
+        const extractedZipCode = zipCodeComponent.longText;
+        console.log("ZIP code extracted:", extractedZipCode);
+        return extractedZipCode;
+      }
+    }
     
-    if (zipCodeComponent) {
-      const extractedZipCode = zipCodeComponent.long_name;
-      console.log("ZIP code extracted:", extractedZipCode);
-      return extractedZipCode;
+    // Fallback: try to extract zip code from formattedAddress using regex
+    if (place.formattedAddress) {
+      const zipRegex = /\b\d{5}\b/;
+      const match = place.formattedAddress.match(zipRegex);
+      if (match && match[0]) {
+        console.log("ZIP code extracted from formatted address:", match[0]);
+        return match[0];
+      }
     }
     
     return null;

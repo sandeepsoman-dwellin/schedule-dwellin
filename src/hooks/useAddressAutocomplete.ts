@@ -50,14 +50,14 @@ export function useAddressAutocomplete({
       setupPlaceAutocomplete(containerElement, inputRef);
       
       // Listen for the place_changed event on the container
-      containerElement.addEventListener('place_changed', (event: any) => {
-        const place = event.detail.place;
-        console.log("Place selected from event:", place);
-        
-        if (!place) {
+      const placeChangedListener = (event: any) => {
+        if (!event.detail || !event.detail.place) {
           console.warn("No place returned from event");
           return;
         }
+        
+        const place = event.detail.place;
+        console.log("Place selected from event:", place);
         
         // Extract address components
         const components = getAddressComponents(place);
@@ -68,6 +68,11 @@ export function useAddressAutocomplete({
         }
         
         const extractedZipCode = components?.postal_code || getZipCodeFromPlace(place);
+        
+        if (!extractedZipCode) {
+          toast.error("Couldn't find a ZIP code for this address. Please try another address.");
+          return;
+        }
         
         // Ensure we have all required components
         const hasStreetNumber = !!components.street_number;
@@ -80,50 +85,57 @@ export function useAddressAutocomplete({
           toast.warning("Address may be incomplete. Please verify all details are correct.");
         }
         
-        if (extractedZipCode && components) {
-          // Save address components
-          setAddressComponents(components);
-          
-          // Format the address in the consistent format: house number, street, city, state, zip, country
-          let formattedAddress = "";
-          
-          // Start with street number and name
-          if (components.street_number && components.route) {
-            formattedAddress = `${components.street_number} ${components.route}`;
-          } else if (components.route) {
-            formattedAddress = components.route;
-          }
-          
-          // Add city
-          if (components.locality) {
-            formattedAddress += formattedAddress ? `, ${components.locality}` : components.locality;
-          }
-          
-          // Add state
-          if (components.administrative_area_level_1) {
-            formattedAddress += formattedAddress ? `, ${components.administrative_area_level_1}` : components.administrative_area_level_1;
-          }
-          
-          // Add zip code
-          if (extractedZipCode) {
-            formattedAddress += formattedAddress ? `, ${extractedZipCode}` : extractedZipCode;
-          }
-          
-          // Add country (assuming US)
-          formattedAddress += " USA";
-          
-          console.log("Formatted address:", formattedAddress);
-          
-          // Set both the complete address and extracted zipcode
-          setAddress(formattedAddress);
-          setZipCode(extractedZipCode);
-          
-          // Process the address selection
-          handleAddressSelection(formattedAddress, extractedZipCode, components);
-        } else {
-          toast.error("Couldn't find a ZIP code for this address. Please try another address.");
+        // Format the address in the consistent format: house number, street, city, state, zip, country
+        let formattedAddress = "";
+        
+        // Start with street number and name
+        if (components.street_number && components.route) {
+          formattedAddress = `${components.street_number} ${components.route}`;
+        } else if (components.route) {
+          formattedAddress = components.route;
         }
-      });
+        
+        // Add city
+        if (components.locality) {
+          formattedAddress += formattedAddress ? `, ${components.locality}` : components.locality;
+        }
+        
+        // Add state
+        if (components.administrative_area_level_1) {
+          formattedAddress += formattedAddress ? `, ${components.administrative_area_level_1}` : components.administrative_area_level_1;
+        }
+        
+        // Add zip code
+        if (extractedZipCode) {
+          formattedAddress += formattedAddress ? `, ${extractedZipCode}` : extractedZipCode;
+        }
+        
+        // Add country (assuming US)
+        formattedAddress += " USA";
+        
+        // Use the formatted address from Google if we couldn't build one ourselves
+        if (!formattedAddress && place.formattedAddress) {
+          formattedAddress = place.formattedAddress;
+        }
+        
+        console.log("Formatted address:", formattedAddress);
+        
+        // Save address components
+        setAddressComponents(components);
+        
+        // Set both the complete address and extracted zipcode
+        setAddress(formattedAddress);
+        setZipCode(extractedZipCode);
+        
+        // Process the address selection
+        handleAddressSelection(formattedAddress, extractedZipCode, components);
+      };
+      
+      containerElement.addEventListener('place_changed', placeChangedListener);
+      
+      return () => {
+        containerElement.removeEventListener('place_changed', placeChangedListener);
+      };
     } catch (error) {
       console.error("Error setting up PlaceAutocompleteElement:", error);
     }

@@ -1,5 +1,5 @@
 
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { MapPin, Search, AlertCircle } from "lucide-react";
@@ -28,24 +28,55 @@ const AddressInputForm: React.FC<AddressInputFormProps> = ({
   const autocompleteContainerRef = useRef<HTMLDivElement>(null);
   
   // Effect to append the Google autocomplete UI to our form
-  React.useEffect(() => {
+  useEffect(() => {
     // Check if both refs exist and are populated
     if (autocompleteContainerRef.current && containerRef?.current) {
       // Move the Google autocomplete element into our visible container
-      autocompleteContainerRef.current.innerHTML = '';
-      autocompleteContainerRef.current.appendChild(containerRef.current);
+      const target = autocompleteContainerRef.current;
+      target.innerHTML = '';
       
-      // Make it visible
+      // Position the container properly and make it visible
       if (containerRef.current) {
+        // Apply proper styling to the container
         containerRef.current.style.display = 'block';
+        containerRef.current.style.position = 'relative';
+        containerRef.current.style.width = '100%';
+        
+        // Add the element to our visible container
+        target.appendChild(containerRef.current);
+      }
+    }
+  }, [containerRef, placesLoaded]);
+  
+  // Make sure the PlaceAutocompleteElement has proper styling
+  useEffect(() => {
+    if (containerRef?.current) {
+      const placeElement = containerRef.current.querySelector('gmpx-place-autocomplete-element');
+      
+      if (placeElement) {
+        // Apply proper styling to make it fit the design
+        (placeElement as HTMLElement).style.width = '100%';
+        (placeElement as HTMLElement).style.boxShadow = 'none';
+        (placeElement as HTMLElement).style.borderRadius = '0';
+        (placeElement as HTMLElement).style.zIndex = '50';
+        
+        // Find and style the inner input if possible
+        const inputElement = placeElement.shadowRoot?.querySelector('input');
+        if (inputElement) {
+          inputElement.style.width = '100%';
+          inputElement.style.height = '40px';
+          inputElement.style.padding = '0.75rem';
+          inputElement.style.paddingLeft = '2.5rem';
+          inputElement.style.borderRadius = '0.375rem';
+        }
       }
     }
   }, [containerRef, placesLoaded]);
 
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-md mx-auto">
+    <form onSubmit={handleSubmit} className="w-full max-w-md mx-auto relative">
       <div className="relative">
-        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none z-10">
           <MapPin className="h-5 w-5 text-gray-400" />
         </div>
         <Input
@@ -64,7 +95,7 @@ const AddressInputForm: React.FC<AddressInputFormProps> = ({
         )}
         <Button 
           type="submit" 
-          className="absolute right-1 top-1 bottom-1 px-4 bg-dwellin-sky hover:bg-opacity-90 text-white"
+          className="absolute right-1 top-1 bottom-1 px-4 bg-dwellin-sky hover:bg-opacity-90 text-white z-10"
           disabled={isLoading}
         >
           {isLoading ? (
@@ -76,7 +107,7 @@ const AddressInputForm: React.FC<AddressInputFormProps> = ({
       </div>
       
       {/* Container for the Google Place Autocomplete Element */}
-      <div ref={autocompleteContainerRef} className="mt-2"></div>
+      <div ref={autocompleteContainerRef} className="absolute left-0 right-0 mt-0 bg-white z-40 shadow-md rounded-b-md"></div>
       
       {quotaExceeded && (
         <div className="mt-2 flex items-center text-amber-600">
