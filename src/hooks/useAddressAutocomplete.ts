@@ -36,7 +36,7 @@ export function useAddressAutocomplete({
           console.log("Place selected:", place);
           
           if (!place.geometry) {
-            console.warning("No geometry returned for this place");
+            console.warn("No geometry returned for this place");
             return;
           }
           
