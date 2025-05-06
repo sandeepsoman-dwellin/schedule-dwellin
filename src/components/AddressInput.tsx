@@ -27,7 +27,7 @@ const AddressInput = ({ onAddressSelect }: AddressInputProps) => {
     handleSubmit
   } = useAddressForm({ onAddressSelect });
   
-  const { placesLoaded, quotaExceeded } = useAddressAutocomplete({
+  const { placesLoaded, quotaExceeded, containerRef } = useAddressAutocomplete({
     inputRef,
     setAddress,
     setZipCode,
@@ -44,6 +44,7 @@ const AddressInput = ({ onAddressSelect }: AddressInputProps) => {
       inputRef={inputRef}
       placesLoaded={placesLoaded}
       quotaExceeded={quotaExceeded}
+      containerRef={containerRef}
     />
   );
 };

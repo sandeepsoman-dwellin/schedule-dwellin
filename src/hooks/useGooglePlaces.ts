@@ -22,7 +22,7 @@ export interface AddressComponents {
 
 export interface GooglePlacesHookResult {
   placesLoaded: boolean;
-  setupAutocomplete: (inputElement: HTMLInputElement) => void;
+  setupPlaceAutocomplete: (container: HTMLDivElement, inputRef: React.RefObject<HTMLInputElement>) => void;
   getAddressComponents: (place: any) => AddressComponents | null;
   getZipCodeFromPlace: (place: any) => string | null;
   quotaExceeded: boolean;
@@ -32,6 +32,7 @@ export function useGooglePlaces(): GooglePlacesHookResult {
   const [placesLoaded, setPlacesLoaded] = useState(false);
   const [quotaExceeded, setQuotaExceeded] = useState(false);
   const googleScriptRef = useRef<boolean>(false);
+  const autocompleteRef = useRef<any>(null);
   const originalConsoleError = console.error;
 
   // Initialize Google Maps Places API
@@ -99,37 +100,57 @@ export function useGooglePlaces(): GooglePlacesHookResult {
     };
   }, []);
 
-  const setupAutocomplete = (inputElement: HTMLInputElement) => {
-    if (!placesLoaded || !inputElement) {
-      console.log("Places not loaded yet or input element not available");
-      return null;
+  const setupPlaceAutocomplete = (container: HTMLDivElement, inputRef: React.RefObject<HTMLInputElement>) => {
+    if (!placesLoaded || !container) {
+      console.log("Places not loaded yet or container element not available");
+      return;
     }
     
     try {
-      console.log("Setting up Places Autocomplete");
+      console.log("Setting up Places PlaceAutocompleteElement");
       
-      // Create the autocomplete object with US addresses only
-      const autocomplete = new window.google.maps.places.Autocomplete(inputElement, {
+      // Clean up any existing autocomplete
+      if (autocompleteRef.current) {
+        container.innerHTML = '';
+      }
+      
+      // Create the PlaceAutocompleteElement
+      const placeAutocompleteElement = new window.google.maps.places.PlaceAutocompleteElement({
         types: ['address'],
         componentRestrictions: { country: 'us' },
         fields: ['address_components', 'formatted_address', 'geometry'],
       });
       
-      // Set the input to focus when selected via keyboard navigation
-      // This ensures the place_changed event fires consistently
-      inputElement.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && document.activeElement === inputElement) {
-          e.preventDefault(); // Prevent form submission
-          // Let Google Maps handle the selection
+      // Add the element to the DOM
+      container.appendChild(placeAutocompleteElement);
+      
+      // Store reference for cleanup
+      autocompleteRef.current = placeAutocompleteElement;
+      
+      // Set up event listener for place selection
+      placeAutocompleteElement.addEventListener('place_changed', (event: any) => {
+        const place = event.detail.place;
+        console.log("Place selected:", place);
+        
+        if (!place.geometry) {
+          console.warn("No geometry returned for this place");
+          return;
+        }
+        
+        // If we have an input reference, update its value with the formatted address
+        if (inputRef.current) {
+          inputRef.current.value = place.formatted_address || "";
+          
+          // Manually trigger an input event to update React state
+          const inputEvent = new Event('input', { bubbles: true });
+          inputRef.current.dispatchEvent(inputEvent);
         }
       });
       
-      console.log("Autocomplete setup complete");
-      return autocomplete;
+      console.log("PlaceAutocompleteElement setup complete");
     } catch (error) {
-      console.error("Error initializing Places Autocomplete:", error);
+      console.error("Error initializing Places PlaceAutocompleteElement:", error);
       toast.error("There was a problem with address search. Please try typing your address manually.");
-      return null;
     }
   };
 
@@ -186,7 +207,7 @@ export function useGooglePlaces(): GooglePlacesHookResult {
 
   return {
     placesLoaded,
-    setupAutocomplete,
+    setupPlaceAutocomplete,
     getAddressComponents,
     getZipCodeFromPlace,
     quotaExceeded

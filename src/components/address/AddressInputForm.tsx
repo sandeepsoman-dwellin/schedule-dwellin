@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { MapPin, Search, AlertCircle } from "lucide-react";
@@ -12,6 +12,7 @@ interface AddressInputFormProps {
   inputRef: React.RefObject<HTMLInputElement>;
   placesLoaded: boolean;
   quotaExceeded: boolean;
+  containerRef?: React.RefObject<HTMLDivElement>;
 }
 
 const AddressInputForm: React.FC<AddressInputFormProps> = ({
@@ -21,8 +22,26 @@ const AddressInputForm: React.FC<AddressInputFormProps> = ({
   isLoading,
   inputRef,
   placesLoaded,
-  quotaExceeded
+  quotaExceeded,
+  containerRef
 }) => {
+  const autocompleteContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Effect to append the Google autocomplete UI to our form
+  React.useEffect(() => {
+    // Check if both refs exist and are populated
+    if (autocompleteContainerRef.current && containerRef?.current) {
+      // Move the Google autocomplete element into our visible container
+      autocompleteContainerRef.current.innerHTML = '';
+      autocompleteContainerRef.current.appendChild(containerRef.current);
+      
+      // Make it visible
+      if (containerRef.current) {
+        containerRef.current.style.display = 'block';
+      }
+    }
+  }, [containerRef, placesLoaded]);
+
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-md mx-auto">
       <div className="relative">
@@ -55,6 +74,10 @@ const AddressInputForm: React.FC<AddressInputFormProps> = ({
           )}
         </Button>
       </div>
+      
+      {/* Container for the Google Place Autocomplete Element */}
+      <div ref={autocompleteContainerRef} className="mt-2"></div>
+      
       {quotaExceeded && (
         <div className="mt-2 flex items-center text-amber-600">
           <AlertCircle className="h-4 w-4 mr-1" />
