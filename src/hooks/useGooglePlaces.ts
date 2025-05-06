@@ -17,6 +17,7 @@ export interface AddressComponents {
   administrative_area_level_1?: string;
   postal_code?: string;
   formatted_address: string;
+  country?: string;
 }
 
 export interface GooglePlacesHookResult {
@@ -114,6 +115,15 @@ export function useGooglePlaces(): GooglePlacesHookResult {
         fields: ['address_components', 'formatted_address', 'geometry'],
       });
       
+      // Set the input to focus when selected via keyboard navigation
+      // This ensures the place_changed event fires consistently
+      inputElement.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && document.activeElement === inputElement) {
+          e.preventDefault(); // Prevent form submission
+          // Let Google Maps handle the selection
+        }
+      });
+      
       console.log("Autocomplete setup complete");
       return autocomplete;
     } catch (error) {
@@ -145,6 +155,8 @@ export function useGooglePlaces(): GooglePlacesHookResult {
         components.administrative_area_level_1 = component.short_name;
       } else if (component.types.includes('postal_code')) {
         components.postal_code = component.long_name;
+      } else if (component.types.includes('country')) {
+        components.country = component.short_name;
       }
     });
     

@@ -36,27 +36,64 @@ export function useAddressAutocomplete({
           console.log("Place selected:", place);
           
           if (!place.geometry) {
-            console.warn("No geometry returned for this place");
+            console.warning("No geometry returned for this place");
             return;
           }
           
           // Extract address components
           const components = getAddressComponents(place);
+          
+          if (!components) {
+            toast.error("Couldn't retrieve address details. Please try another address.");
+            return;
+          }
+          
           const extractedZipCode = components?.postal_code || getZipCodeFromPlace(place);
+          
+          // Ensure we have all required components
+          const hasStreetNumber = !!components.street_number;
+          const hasStreetName = !!components.route;
+          const hasCity = !!components.locality;
+          const hasState = !!components.administrative_area_level_1;
+          const hasZip = !!extractedZipCode;
+          
+          if (!hasStreetNumber || !hasStreetName || !hasCity || !hasState || !hasZip) {
+            toast.warning("Address may be incomplete. Please verify all details are correct.");
+          }
           
           if (extractedZipCode && components) {
             // Save address components
             setAddressComponents(components);
             
-            // Update the address field to the formatted address
-            let formattedAddress = components.formatted_address || place.formatted_address || "";
+            // Format the address in the consistent format: house number, street, city, state, zip, country
+            let formattedAddress = "";
             
-            // Ensure ZIP code is included in the address display
-            if (!formattedAddress.includes(extractedZipCode)) {
-              formattedAddress += ` ${extractedZipCode}`;
+            // Start with street number and name
+            if (components.street_number && components.route) {
+              formattedAddress = `${components.street_number} ${components.route}`;
+            } else if (components.route) {
+              formattedAddress = components.route;
             }
             
-            console.log("Formatted address with ZIP:", formattedAddress);
+            // Add city
+            if (components.locality) {
+              formattedAddress += formattedAddress ? `, ${components.locality}` : components.locality;
+            }
+            
+            // Add state
+            if (components.administrative_area_level_1) {
+              formattedAddress += formattedAddress ? `, ${components.administrative_area_level_1}` : components.administrative_area_level_1;
+            }
+            
+            // Add zip code
+            if (extractedZipCode) {
+              formattedAddress += formattedAddress ? `, ${extractedZipCode}` : extractedZipCode;
+            }
+            
+            // Add country (assuming US)
+            formattedAddress += " USA";
+            
+            console.log("Formatted address:", formattedAddress);
             
             // Set both the complete address and extracted zipcode
             setAddress(formattedAddress);
