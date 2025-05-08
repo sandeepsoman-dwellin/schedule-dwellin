@@ -36,6 +36,92 @@ const AddressInputForm: React.FC<AddressInputFormProps> = ({
       if (autocompletePositionRef.current.firstChild !== containerRef.current) {
         autocompletePositionRef.current.innerHTML = '';
         autocompletePositionRef.current.appendChild(containerRef.current);
+        
+        // Apply custom styles to make it match the requested format
+        const containerStyle = `
+          .address-suggestions-container {
+            background-color: white;
+            border: 1px solid #e2e8f0;
+            border-top: none;
+            border-radius: 0 0 0.375rem 0.375rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            max-height: 300px;
+            overflow-y: auto;
+          }
+          
+          .suggestion-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            border-bottom: 1px solid #f3f4f6;
+            cursor: pointer;
+          }
+          
+          .suggestion-item:hover {
+            background-color: #f9fafb;
+          }
+          
+          .suggestion-text {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            overflow: hidden;
+            text-align: left;
+          }
+          
+          .suggestion-main-text {
+            font-weight: 500;
+            margin-right: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          
+          .suggestion-secondary-text {
+            color: #6b7280;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+        `;
+        
+        // Add the styles to the document
+        const styleEl = document.createElement('style');
+        styleEl.textContent = containerStyle;
+        document.head.appendChild(styleEl);
+        
+        // Modify existing suggestion items or set up a mutation observer to apply styles to new items
+        const observer = new MutationObserver((mutations) => {
+          mutations.forEach(mutation => {
+            if (mutation.addedNodes.length) {
+              const container = document.querySelector('.address-suggestions-container');
+              if (container) {
+                const items = container.querySelectorAll('.suggestion-item');
+                items.forEach(item => {
+                  // Ensure the text container has horizontal layout
+                  const textContainer = item.querySelector('[style*="flex: 1"]');
+                  if (textContainer) {
+                    (textContainer as HTMLElement).style.display = 'flex';
+                    (textContainer as HTMLElement).style.alignItems = 'center';
+                    (textContainer as HTMLElement).style.textAlign = 'left';
+                    (textContainer as HTMLElement).style.overflow = 'hidden';
+                  }
+                });
+              }
+            }
+          });
+        });
+        
+        if (containerRef.current) {
+          observer.observe(containerRef.current, { childList: true, subtree: true });
+        }
+        
+        return () => {
+          observer.disconnect();
+          if (styleEl.parentNode) {
+            styleEl.parentNode.removeChild(styleEl);
+          }
+        };
       }
     }
   }, [containerRef, autocompletePositionRef, placesLoaded, quotaExceeded]);

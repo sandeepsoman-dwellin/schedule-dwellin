@@ -1,5 +1,5 @@
 
-import { useState, FormEvent, ChangeEvent } from "react";
+import { useState, FormEvent, ChangeEvent, useEffect } from "react";
 import { toast } from "sonner";
 import { AddressComponents } from "@/hooks/useGooglePlaces";
 
@@ -14,7 +14,7 @@ export function useAddressForm({ onAddressSelect }: UseAddressFormProps) {
   const [addressComponents, setAddressComponents] = useState<AddressComponents | null>(null);
   
   // Load address from sessionStorage if available
-  useState(() => {
+  useEffect(() => {
     const storedAddress = sessionStorage.getItem("customerAddress");
     const storedZipCode = sessionStorage.getItem("zipCode");
     const storedComponents = sessionStorage.getItem("addressComponents");
@@ -31,7 +31,23 @@ export function useAddressForm({ onAddressSelect }: UseAddressFormProps) {
         }
       }
     }
-  });
+  }, []);
+
+  // Improved function to extract zip code from address string
+  const extractZipCodeFromAddress = (addressText: string): string | null => {
+    // Match standard 5-digit US ZIP code or ZIP+4 format
+    const zipCodeRegex = /\b\d{5}(?:-\d{4})?\b/g;
+    const matches = Array.from(addressText.matchAll(zipCodeRegex));
+    
+    if (matches && matches.length > 0) {
+      // Get the last match, which is likely the actual zip code (not street numbers)
+      const extractedZip = matches[matches.length - 1][0];
+      console.log("ZIP code extracted:", extractedZip);
+      return extractedZip.substring(0, 5); // Return only first 5 digits
+    }
+    
+    return null;
+  };
 
   const handleAddressSelection = (
     selectedAddress: string, 
@@ -42,15 +58,10 @@ export function useAddressForm({ onAddressSelect }: UseAddressFormProps) {
     
     // Extract ZIP code if not already provided
     let extractedZipCode = selectedZipCode;
-    if (!extractedZipCode) {
+    if (!extractedZipCode || extractedZipCode.trim() === '') {
       // Try to extract from the address string
-      const zipCodeRegex = /\b\d{5}(?:-\d{4})?\b/;
-      const match = selectedAddress.match(zipCodeRegex);
-      
-      if (match && match[0]) {
-        console.log("ZIP code extracted from address string:", match[0]);
-        extractedZipCode = match[0].substring(0, 5); // Ensure we only get the first 5 digits
-      }
+      extractedZipCode = extractZipCodeFromAddress(selectedAddress) || '';
+      console.log("ZIP code extracted from selection:", extractedZipCode);
     }
 
     // Validate zip code
@@ -68,6 +79,11 @@ export function useAddressForm({ onAddressSelect }: UseAddressFormProps) {
       
       if (!hasStreet || !hasCity || !hasState) {
         toast.warning("Address may be incomplete. Please check that it contains street, city, and state.");
+      }
+      
+      // Store the extracted zip code in components if missing
+      if (!components.postal_code && extractedZipCode) {
+        components.postal_code = extractedZipCode;
       }
       
       // Save address components to sessionStorage
@@ -103,15 +119,13 @@ export function useAddressForm({ onAddressSelect }: UseAddressFormProps) {
     }
 
     // Extract zipcode from address (fallback if autocomplete not used)
-    const zipCodeRegex = /\b\d{5}(?:-\d{4})?\b/;
-    const match = address.match(zipCodeRegex);
+    const extractedZipCode = extractZipCodeFromAddress(address);
     
-    if (!match) {
+    if (!extractedZipCode) {
       toast.error("Please enter an address with a valid ZIP code");
       return;
     }
     
-    const extractedZipCode = match[0].substring(0, 5); // Get first 5 digits
     console.log("ZIP code extracted from manual entry:", extractedZipCode);
     setZipCode(extractedZipCode);
     

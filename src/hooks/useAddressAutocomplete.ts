@@ -69,26 +69,38 @@ export function useAddressAutocomplete({
           return;
         }
         
-        // Get ZIP code - first try from components, then from formatted address
-        let extractedZipCode = components?.postal_code || getZipCodeFromPlace(place);
+        // Get ZIP code from components or try to extract it
+        let extractedZipCode = '';
         
-        // If still no zip code, try to extract from formatted address
-        if (!extractedZipCode && place.formatted_address) {
-          const zipCodeRegex = /\b\d{5}(?:-\d{4})?\b/;
-          const match = place.formatted_address.match(zipCodeRegex);
-          if (match && match[0]) {
-            extractedZipCode = match[0].substring(0, 5); // Ensure we only get the first 5 digits
-            console.log("ZIP code extracted from formatted address:", extractedZipCode);
+        // First check if postal_code exists in components
+        if (components.postal_code) {
+          extractedZipCode = components.postal_code;
+          console.log("ZIP code found in components:", extractedZipCode);
+        } else {
+          // Try using the helper function
+          extractedZipCode = getZipCodeFromPlace(place) || '';
+          console.log("ZIP code from getZipCodeFromPlace:", extractedZipCode);
+          
+          // If still no zip code, try to extract from formatted address
+          if (!extractedZipCode && place.formatted_address) {
+            const zipCodeRegex = /\b\d{5}(?:-\d{4})?\b/g;
+            const matches = Array.from(place.formatted_address.matchAll(zipCodeRegex));
             
-            // Update the components with the extracted ZIP
-            if (components && !components.postal_code) {
-              components.postal_code = extractedZipCode;
+            if (matches && matches.length > 0) {
+              // Get the last match which is more likely to be the ZIP code
+              extractedZipCode = matches[matches.length - 1][0].substring(0, 5);
+              console.log("ZIP code extracted from formatted address:", extractedZipCode);
+              
+              // Update the components with the extracted ZIP
+              if (components && !components.postal_code) {
+                components.postal_code = extractedZipCode;
+              }
             }
           }
         }
         
-        if (!extractedZipCode) {
-          toast.error("Couldn't find a ZIP code for this address. Please try another address.");
+        if (!extractedZipCode || extractedZipCode.trim() === '') {
+          toast.error("Couldn't find a ZIP code for this address. Please try another address or add the ZIP code manually.");
           return;
         }
         
