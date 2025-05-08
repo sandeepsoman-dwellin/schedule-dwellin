@@ -69,7 +69,23 @@ export function useAddressAutocomplete({
           return;
         }
         
-        const extractedZipCode = components?.postal_code || getZipCodeFromPlace(place);
+        // Get ZIP code - first try from components, then from formatted address
+        let extractedZipCode = components?.postal_code || getZipCodeFromPlace(place);
+        
+        // If still no zip code, try to extract from formatted address
+        if (!extractedZipCode && place.formatted_address) {
+          const zipCodeRegex = /\b\d{5}\b/;
+          const match = place.formatted_address.match(zipCodeRegex);
+          if (match && match[0]) {
+            extractedZipCode = match[0];
+            console.log("ZIP code extracted from formatted address:", extractedZipCode);
+            
+            // Update the components with the extracted ZIP
+            if (components && !components.postal_code) {
+              components.postal_code = extractedZipCode;
+            }
+          }
+        }
         
         if (!extractedZipCode) {
           toast.error("Couldn't find a ZIP code for this address. Please try another address.");

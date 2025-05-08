@@ -54,6 +54,7 @@ const AddressInputForm: React.FC<AddressInputFormProps> = ({
           className="pl-10 py-6 text-base"
           required
           ref={inputRef}
+          autoComplete="off" // Disable browser's native autocomplete
         />
         {!placesLoaded && !quotaExceeded && (
           <div className="absolute inset-y-0 right-12 flex items-center">

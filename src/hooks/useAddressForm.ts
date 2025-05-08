@@ -40,8 +40,21 @@ export function useAddressForm({ onAddressSelect }: UseAddressFormProps) {
   ) => {
     setIsLoading(true);
     
+    // Extract ZIP code if not already provided
+    let extractedZipCode = selectedZipCode;
+    if (!extractedZipCode || !/^\d{5}$/.test(extractedZipCode)) {
+      // Try to extract from the address string
+      const zipCodeRegex = /\b\d{5}\b/;
+      const match = selectedAddress.match(zipCodeRegex);
+      
+      if (match && match[0]) {
+        console.log("ZIP code extracted from address string:", match[0]);
+        extractedZipCode = match[0];
+      }
+    }
+
     // Validate zip code
-    if (!/^\d{5}$/.test(selectedZipCode)) {
+    if (!extractedZipCode || !/^\d{5}$/.test(extractedZipCode)) {
       toast.error("Please enter a valid 5-digit ZIP code");
       setIsLoading(false);
       return;
@@ -62,31 +75,16 @@ export function useAddressForm({ onAddressSelect }: UseAddressFormProps) {
       localStorage.setItem("addressComponents", JSON.stringify(components));
     }
 
-    // Ensure address is in the standardized format
-    // "Street number Street name, City, State, ZIP USA"
-    const addressRegex = /^(\d+\s+[^,]+),\s+([^,]+),\s+([A-Z]{2}),\s+(\d{5})\s+USA$/;
-    if (!addressRegex.test(selectedAddress)) {
-      // Try to parse and reformat
-      const zipRegex = /\b\d{5}\b/;
-      const zipMatch = selectedAddress.match(zipRegex);
-      
-      if (components && components.street_number && components.route && 
-          components.locality && components.administrative_area_level_1 && zipMatch) {
-        // Reformat in standard format
-        selectedAddress = `${components.street_number} ${components.route}, ${components.locality}, ${components.administrative_area_level_1}, ${zipMatch[0]} USA`;
-      }
-    }
-
     // Save address to sessionStorage
     sessionStorage.setItem("customerAddress", selectedAddress);
-    sessionStorage.setItem("zipCode", selectedZipCode);
+    sessionStorage.setItem("zipCode", extractedZipCode);
     localStorage.setItem("customerAddress", selectedAddress);
-    localStorage.setItem("zipCode", selectedZipCode);
+    localStorage.setItem("zipCode", extractedZipCode);
 
     // Submit the address and zip code
     setTimeout(() => {
       setIsLoading(false);
-      onAddressSelect(selectedAddress, selectedZipCode, components);
+      onAddressSelect(selectedAddress, extractedZipCode, components);
     }, 500);
   };
 
