@@ -23,7 +23,7 @@ export function useAddressAutocomplete({
   const { placesLoaded, setupPlaceAutocomplete, getAddressComponents, getZipCodeFromPlace, quotaExceeded } = useGooglePlaces();
   const [autocompleteInitialized, setAutocompleteInitialized] = useState(false);
   
-  // Create a container element for the PlaceAutocompleteElement
+  // Create a container element for the autocomplete
   useEffect(() => {
     if (!containerRef.current) {
       const container = document.createElement('div');
@@ -47,7 +47,7 @@ export function useAddressAutocomplete({
     if (!placesLoaded || !containerRef.current || quotaExceeded || autocompleteInitialized) return;
     
     try {
-      // Setup the PlaceAutocompleteElement
+      // Setup the Place Autocomplete
       setupPlaceAutocomplete(containerRef.current, inputRef);
       setAutocompleteInitialized(true);
       
@@ -59,7 +59,7 @@ export function useAddressAutocomplete({
         }
         
         const place = event.detail.place;
-        console.log("Place selected from event:", place);
+        console.log("Place selected:", place);
         
         // Extract address components
         const components = getAddressComponents(place);
@@ -116,8 +116,8 @@ export function useAddressAutocomplete({
         formattedAddress += " USA";
         
         // Use the formatted address from Google if we couldn't build one ourselves
-        if (!formattedAddress && place.formattedAddress) {
-          formattedAddress = place.formattedAddress;
+        if (!formattedAddress && place.formatted_address) {
+          formattedAddress = place.formatted_address;
         }
         
         console.log("Formatted address:", formattedAddress);
@@ -143,7 +143,7 @@ export function useAddressAutocomplete({
         }
       };
     } catch (error) {
-      console.error("Error setting up PlaceAutocompleteElement:", error);
+      console.error("Error setting up Autocomplete:", error);
       setAutocompleteInitialized(false);
     }
   }, [placesLoaded, quotaExceeded, containerRef, inputRef, setAddress, setZipCode, setAddressComponents, handleAddressSelection, getAddressComponents, getZipCodeFromPlace, setupPlaceAutocomplete, autocompleteInitialized]);

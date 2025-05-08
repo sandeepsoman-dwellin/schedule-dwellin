@@ -26,6 +26,7 @@ export interface GooglePlacesHookResult {
   getAddressComponents: (place: any) => AddressComponents | null;
   getZipCodeFromPlace: (place: any) => string | null;
   quotaExceeded: boolean;
+  getPlacePredictions: (input: string) => Promise<any[]>;
 }
 
 export function useGooglePlaces(): GooglePlacesHookResult {
@@ -34,6 +35,7 @@ export function useGooglePlaces(): GooglePlacesHookResult {
   const googleScriptRef = useRef<HTMLScriptElement | null>(null);
   const googleApiLoadingRef = useRef(false);
   const autocompleteRef = useRef<any>(null);
+  const autocompleteServiceRef = useRef<any>(null);
   const originalConsoleError = console.error;
 
   // Initialize Google Maps Places API
@@ -46,6 +48,7 @@ export function useGooglePlaces(): GooglePlacesHookResult {
     if (window.google?.maps?.places) {
       console.log("Google Maps already loaded");
       setPlacesLoaded(true);
+      autocompleteServiceRef.current = new window.google.maps.places.AutocompleteService();
       return;
     }
     
@@ -63,12 +66,17 @@ export function useGooglePlaces(): GooglePlacesHookResult {
     window.initGoogleMaps = () => {
       console.log("Google Maps Places API loaded successfully");
       setPlacesLoaded(true);
+      
+      // Initialize AutocompleteService when API is ready
+      if (window.google?.maps?.places) {
+        autocompleteServiceRef.current = new window.google.maps.places.AutocompleteService();
+      }
     };
     
-    // Create the script tag with proper async attribute
+    // Create the script tag with proper async and loading attributes
     const script = document.createElement('script');
     script.id = 'google-maps-script';
-    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyC0PUwthcVcCMlhVPbpoCRtEeW0HQgWmbQ&libraries=places&callback=initGoogleMaps`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyC0PUwthcVcCMlhVPbpoCRtEeW0HQgWmbQ&libraries=places&callback=initGoogleMaps&loading=async`;
     script.async = true;
     script.defer = true;
     googleScriptRef.current = script;
@@ -99,6 +107,42 @@ export function useGooglePlaces(): GooglePlacesHookResult {
     };
   }, []);
 
+  // Function to get place predictions using AutocompleteService
+  const getPlacePredictions = async (input: string): Promise<any[]> => {
+    if (!placesLoaded || !autocompleteServiceRef.current) {
+      return [];
+    }
+
+    try {
+      return new Promise((resolve, reject) => {
+        const request = {
+          input: input,
+          componentRestrictions: { country: 'us' },
+          types: ['address']
+        };
+
+        autocompleteServiceRef.current.getPlacePredictions(
+          request,
+          (predictions: any[], status: string) => {
+            if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
+              resolve(predictions);
+            } else if (status === window.google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+              resolve([]);
+            } else if (status === window.google.maps.places.PlacesServiceStatus.OVER_QUERY_LIMIT) {
+              setQuotaExceeded(true);
+              reject("API quota exceeded");
+            } else {
+              reject(status);
+            }
+          }
+        );
+      });
+    } catch (error) {
+      console.error("Error getting place predictions:", error);
+      return [];
+    }
+  };
+
   const setupPlaceAutocomplete = (container: HTMLDivElement, inputRef: React.RefObject<HTMLInputElement>) => {
     if (!placesLoaded || !container || !window.google?.maps?.places) {
       console.log("Places API not loaded yet or container element not available");
@@ -106,58 +150,138 @@ export function useGooglePlaces(): GooglePlacesHookResult {
     }
     
     try {
-      console.log("Setting up Places PlaceAutocompleteElement");
+      console.log("Setting up Place Autocomplete");
       
       // Clean up any existing autocomplete
       while (container.firstChild) {
         container.removeChild(container.firstChild);
       }
       
-      // Create the PlaceAutocompleteElement with proper configuration
-      const placeAutocompleteElement = document.createElement("gmpx-place-autocomplete-element");
-      placeAutocompleteElement.setAttribute("input-placeholder", "Enter your address");
-      placeAutocompleteElement.setAttribute("button-label", "Search");
-      placeAutocompleteElement.setAttribute("input-label", "");
+      // Create suggestions container
+      const suggestionsContainer = document.createElement('div');
+      suggestionsContainer.className = 'address-suggestions-container';
+      suggestionsContainer.style.display = 'none';
+      suggestionsContainer.style.position = 'absolute';
+      suggestionsContainer.style.top = '100%';
+      suggestionsContainer.style.left = '0';
+      suggestionsContainer.style.right = '0';
+      suggestionsContainer.style.width = '100%';
+      suggestionsContainer.style.maxHeight = '300px';
+      suggestionsContainer.style.overflowY = 'auto';
+      suggestionsContainer.style.zIndex = '1000';
+      suggestionsContainer.style.backgroundColor = 'white';
+      suggestionsContainer.style.border = '1px solid #e2e8f0';
+      suggestionsContainer.style.borderTop = 'none';
+      suggestionsContainer.style.borderRadius = '0 0 0.375rem 0.375rem';
+      suggestionsContainer.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
       
-      // Set restrictions to USA addresses only
-      placeAutocompleteElement.setAttribute("restrictions", JSON.stringify({
-        country: "us",
-        type: "address"
-      }));
+      container.appendChild(suggestionsContainer);
       
-      // Add the element to the DOM
-      container.appendChild(placeAutocompleteElement);
-      
-      // Style the element
-      placeAutocompleteElement.style.width = "100%";
-      placeAutocompleteElement.style.display = "block";
-      
-      // Store reference for cleanup
-      autocompleteRef.current = placeAutocompleteElement;
-      
-      // Set up event listener for place selection
-      placeAutocompleteElement.addEventListener('place_changed', (event: any) => {
-        if (!event || !event.detail || !event.detail.place) {
-          console.warn("No place data received from event");
-          return;
-        }
+      // Set up input event listener if we have an input reference
+      if (inputRef.current) {
+        // Initialize PlacesService for getting place details
+        const placesService = new window.google.maps.places.PlacesService(document.createElement('div'));
         
-        const place = event.detail.place;
-        console.log("Place selected:", place);
+        let debounceTimer: number;
         
-        // If we have an input reference, update its value with the formatted address
-        if (inputRef.current && place.formattedAddress) {
-          inputRef.current.value = place.formattedAddress;
+        // Helper to render suggestions
+        const renderSuggestions = (predictions: any[]) => {
+          suggestionsContainer.innerHTML = '';
           
-          // Manually trigger an input event to update React state
-          const inputEvent = new Event('input', { bubbles: true });
-          inputRef.current.dispatchEvent(inputEvent);
-        }
-      });
-      
-      console.log("PlaceAutocompleteElement setup complete");
+          if (predictions.length === 0) {
+            suggestionsContainer.style.display = 'none';
+            return;
+          }
+          
+          predictions.forEach(prediction => {
+            const item = document.createElement('div');
+            item.className = 'suggestion-item';
+            item.textContent = prediction.description;
+            item.style.padding = '8px 12px';
+            item.style.cursor = 'pointer';
+            
+            item.addEventListener('mouseenter', () => {
+              item.style.backgroundColor = '#f7fafc';
+            });
+            
+            item.addEventListener('mouseleave', () => {
+              item.style.backgroundColor = 'transparent';
+            });
+            
+            item.addEventListener('click', () => {
+              if (inputRef.current) {
+                inputRef.current.value = prediction.description;
+                
+                // Get place details
+                placesService.getDetails(
+                  { placeId: prediction.place_id, fields: ['address_components', 'formatted_address', 'geometry'] },
+                  (place: any, status: string) => {
+                    if (status === window.google.maps.places.PlacesServiceStatus.OK && place) {
+                      // Create a synthetic event that matches the place_changed event format
+                      const placeChangedEvent = new CustomEvent('place_changed', {
+                        detail: { place }
+                      });
+                      
+                      // Dispatch the event on the container
+                      container.dispatchEvent(placeChangedEvent);
+                    }
+                  }
+                );
+              }
+              
+              // Hide suggestions
+              suggestionsContainer.style.display = 'none';
+            });
+            
+            suggestionsContainer.appendChild(item);
+          });
+          
+          suggestionsContainer.style.display = 'block';
+        };
+        
+        // Set up input event listener
+        inputRef.current.addEventListener('input', (e: Event) => {
+          const target = e.target as HTMLInputElement;
+          const value = target.value;
+          
+          // Clear previous timer
+          clearTimeout(debounceTimer);
+          
+          if (value.length < 3) {
+            suggestionsContainer.style.display = 'none';
+            return;
+          }
+          
+          // Set new timer for debounce (300ms)
+          debounceTimer = window.setTimeout(async () => {
+            try {
+              const predictions = await getPlacePredictions(value);
+              renderSuggestions(predictions);
+            } catch (error) {
+              console.error('Failed to get predictions:', error);
+              suggestionsContainer.style.display = 'none';
+            }
+          }, 300);
+        });
+        
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', (e: MouseEvent) => {
+          if (!container.contains(e.target as Node)) {
+            suggestionsContainer.style.display = 'none';
+          }
+        });
+        
+        // Show suggestions on focus if there's text and previous results
+        inputRef.current.addEventListener('focus', () => {
+          if (inputRef.current?.value.length >= 3 && suggestionsContainer.childElementCount > 0) {
+            suggestionsContainer.style.display = 'block';
+          }
+        });
+        
+        console.log("Autocomplete setup complete with AutocompleteService");
+      }
     } catch (error) {
-      console.error("Error initializing Places PlaceAutocompleteElement:", error);
+      console.error("Error initializing Places Autocomplete:", error);
       toast.error("There was a problem with address search. Please try typing your address manually.");
     }
   };
@@ -168,27 +292,26 @@ export function useGooglePlaces(): GooglePlacesHookResult {
       return null;
     }
     
-    // For PlaceAutocompleteElement, we need to parse differently than the old API
     const components: AddressComponents = {
-      formatted_address: place.formattedAddress || "",
+      formatted_address: place.formatted_address || "",
     };
     
-    // PlaceAutocompleteElement returns data in a different format than Autocomplete
-    if (place.addressComponents) {
-      place.addressComponents.forEach((component: any) => {
+    // Process address components
+    if (place.address_components) {
+      place.address_components.forEach((component: any) => {
         const types = component.types || [];
         if (types.includes('street_number')) {
-          components.street_number = component.longText;
+          components.street_number = component.long_name;
         } else if (types.includes('route')) {
-          components.route = component.longText;
+          components.route = component.long_name;
         } else if (types.includes('locality')) {
-          components.locality = component.longText;
+          components.locality = component.long_name;
         } else if (types.includes('administrative_area_level_1')) {
-          components.administrative_area_level_1 = component.shortText;
+          components.administrative_area_level_1 = component.short_name;
         } else if (types.includes('postal_code')) {
-          components.postal_code = component.longText;
+          components.postal_code = component.long_name;
         } else if (types.includes('country')) {
-          components.country = component.shortText;
+          components.country = component.short_name;
         }
       });
     }
@@ -203,23 +326,23 @@ export function useGooglePlaces(): GooglePlacesHookResult {
       return null;
     }
     
-    // Try to extract zip code from addressComponents
-    if (place.addressComponents) {
-      const zipCodeComponent = place.addressComponents.find(
+    // Try to extract zip code from address_components
+    if (place.address_components) {
+      const zipCodeComponent = place.address_components.find(
         (component: any) => component.types && component.types.includes('postal_code')
       );
       
       if (zipCodeComponent) {
-        const extractedZipCode = zipCodeComponent.longText;
+        const extractedZipCode = zipCodeComponent.long_name;
         console.log("ZIP code extracted:", extractedZipCode);
         return extractedZipCode;
       }
     }
     
-    // Fallback: try to extract zip code from formattedAddress using regex
-    if (place.formattedAddress) {
+    // Fallback: try to extract zip code from formatted_address using regex
+    if (place.formatted_address) {
       const zipRegex = /\b\d{5}\b/;
-      const match = place.formattedAddress.match(zipRegex);
+      const match = place.formatted_address.match(zipRegex);
       if (match && match[0]) {
         console.log("ZIP code extracted from formatted address:", match[0]);
         return match[0];
@@ -234,6 +357,7 @@ export function useGooglePlaces(): GooglePlacesHookResult {
     setupPlaceAutocomplete,
     getAddressComponents,
     getZipCodeFromPlace,
-    quotaExceeded
+    quotaExceeded,
+    getPlacePredictions
   };
 }
