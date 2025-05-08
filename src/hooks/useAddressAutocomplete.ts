@@ -87,40 +87,9 @@ export function useAddressAutocomplete({
           toast.warning("Address may be incomplete. Please verify all details are correct.");
         }
         
-        // Format the address in the consistent format: house number, street, city, state, zip, country
-        let formattedAddress = "";
-        
-        // Start with street number and name
-        if (components.street_number && components.route) {
-          formattedAddress = `${components.street_number} ${components.route}`;
-        } else if (components.route) {
-          formattedAddress = components.route;
-        }
-        
-        // Add city
-        if (components.locality) {
-          formattedAddress += formattedAddress ? `, ${components.locality}` : components.locality;
-        }
-        
-        // Add state
-        if (components.administrative_area_level_1) {
-          formattedAddress += formattedAddress ? `, ${components.administrative_area_level_1}` : components.administrative_area_level_1;
-        }
-        
-        // Add zip code
-        if (extractedZipCode) {
-          formattedAddress += formattedAddress ? `, ${extractedZipCode}` : extractedZipCode;
-        }
-        
-        // Add country (assuming US)
-        formattedAddress += " USA";
-        
-        // Use the formatted address from Google if we couldn't build one ourselves
-        if (!formattedAddress && place.formatted_address) {
-          formattedAddress = place.formatted_address;
-        }
-        
-        console.log("Formatted address:", formattedAddress);
+        // Use the formatted_address from Google's response
+        const formattedAddress = place.formatted_address;
+        console.log("Using formatted address:", formattedAddress);
         
         // Save address components
         setAddressComponents(components);

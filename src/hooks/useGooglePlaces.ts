@@ -194,29 +194,76 @@ export function useGooglePlaces(): GooglePlacesHookResult {
           }
           
           predictions.forEach(prediction => {
+            // Create main container for each prediction
             const item = document.createElement('div');
             item.className = 'suggestion-item';
-            item.textContent = prediction.description;
-            item.style.padding = '8px 12px';
+            item.style.padding = '10px';
+            item.style.borderBottom = '1px solid #f3f4f6';
             item.style.cursor = 'pointer';
+            item.style.display = 'flex';
+            item.style.alignItems = 'center';
             
+            // Add map pin icon
+            const iconContainer = document.createElement('div');
+            iconContainer.style.marginRight = '10px';
+            iconContainer.style.display = 'flex';
+            iconContainer.style.alignItems = 'center';
+            iconContainer.style.justifyContent = 'center';
+            iconContainer.style.color = '#9ca3af'; // gray-400
+            iconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
+            
+            // Create the text container with structured formatting
+            const textContainer = document.createElement('div');
+            textContainer.style.flex = '1';
+            
+            // Split the description into main parts (usually road) and secondary parts (city, state)
+            const mainPartMatch = prediction.structured_formatting?.main_text || '';
+            const secondaryPartMatch = prediction.structured_formatting?.secondary_text || '';
+            
+            if (prediction.structured_formatting) {
+              // Create main text element (road name)
+              const mainText = document.createElement('div');
+              mainText.style.fontWeight = '500'; 
+              mainText.textContent = mainPartMatch;
+              textContainer.appendChild(mainText);
+              
+              // Create secondary text element (city, state, etc)
+              const secondaryText = document.createElement('div');
+              secondaryText.style.fontSize = '0.875rem';
+              secondaryText.style.color = '#6b7280'; // gray-500
+              secondaryText.textContent = secondaryPartMatch;
+              textContainer.appendChild(secondaryText);
+            } else {
+              // Fallback if structured_formatting is not available
+              textContainer.textContent = prediction.description;
+            }
+            
+            // Assemble the item
+            item.appendChild(iconContainer);
+            item.appendChild(textContainer);
+            
+            // Add hover effect
             item.addEventListener('mouseenter', () => {
-              item.style.backgroundColor = '#f7fafc';
+              item.style.backgroundColor = '#f9fafb'; // gray-50
             });
             
             item.addEventListener('mouseleave', () => {
               item.style.backgroundColor = 'transparent';
             });
             
+            // Handle click
             item.addEventListener('click', () => {
               if (inputRef.current) {
-                inputRef.current.value = prediction.description;
-                
-                // Get place details
+                // Use the formatted_address property when it gets available
                 placesService.getDetails(
                   { placeId: prediction.place_id, fields: ['address_components', 'formatted_address', 'geometry'] },
                   (place: any, status: string) => {
                     if (status === window.google.maps.places.PlacesServiceStatus.OK && place) {
+                      // Use the formatted_address from the place details
+                      if (inputRef.current) {
+                        inputRef.current.value = place.formatted_address;
+                      }
+                      
                       // Create a synthetic event that matches the place_changed event format
                       const placeChangedEvent = new CustomEvent('place_changed', {
                         detail: { place }
@@ -235,6 +282,14 @@ export function useGooglePlaces(): GooglePlacesHookResult {
             
             suggestionsContainer.appendChild(item);
           });
+          
+          // Add Google attribution at the bottom
+          const attribution = document.createElement('div');
+          attribution.style.padding = '8px';
+          attribution.style.textAlign = 'right';
+          attribution.style.borderTop = '1px solid #f3f4f6';
+          attribution.innerHTML = '<img src="https://developers.google.com/maps/documentation/images/powered_by_google_on_white.png" alt="Powered by Google" style="height: 18px;">';
+          suggestionsContainer.appendChild(attribution);
           
           suggestionsContainer.style.display = 'block';
         };
