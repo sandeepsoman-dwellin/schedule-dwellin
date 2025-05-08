@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 
@@ -212,27 +211,38 @@ export function useGooglePlaces(): GooglePlacesHookResult {
             iconContainer.style.color = '#9ca3af'; // gray-400
             iconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
             
-            // Create the text container with structured formatting
+            // Create the text container with structured formatting - Make it a single line
             const textContainer = document.createElement('div');
             textContainer.style.flex = '1';
+            textContainer.style.whiteSpace = 'nowrap';
+            textContainer.style.overflow = 'hidden';
+            textContainer.style.textOverflow = 'ellipsis';
             
-            // Split the description into main parts (usually road) and secondary parts (city, state)
-            const mainPartMatch = prediction.structured_formatting?.main_text || '';
-            const secondaryPartMatch = prediction.structured_formatting?.secondary_text || '';
+            // Extract main and secondary parts
+            const mainText = prediction.structured_formatting?.main_text || '';
+            const secondaryText = prediction.structured_formatting?.secondary_text || '';
             
             if (prediction.structured_formatting) {
-              // Create main text element (road name)
-              const mainText = document.createElement('div');
-              mainText.style.fontWeight = '500'; 
-              mainText.textContent = mainPartMatch;
-              textContainer.appendChild(mainText);
+              // Combine main and secondary text with space
+              const fullText = document.createElement('div');
+              fullText.style.textAlign = 'left';
               
-              // Create secondary text element (city, state, etc)
-              const secondaryText = document.createElement('div');
-              secondaryText.style.fontSize = '0.875rem';
-              secondaryText.style.color = '#6b7280'; // gray-500
-              secondaryText.textContent = secondaryPartMatch;
-              textContainer.appendChild(secondaryText);
+              // Add the main text (street) in normal weight
+              const mainSpan = document.createElement('span');
+              mainSpan.style.fontWeight = '500';
+              mainSpan.textContent = mainText;
+              fullText.appendChild(mainSpan);
+              
+              // Add a space
+              fullText.appendChild(document.createTextNode(' '));
+              
+              // Add the secondary text (city, state) in gray
+              const secondarySpan = document.createElement('span');
+              secondarySpan.style.color = '#6b7280'; // gray-500
+              secondarySpan.textContent = secondaryText;
+              fullText.appendChild(secondarySpan);
+              
+              textContainer.appendChild(fullText);
             } else {
               // Fallback if structured_formatting is not available
               textContainer.textContent = prediction.description;
@@ -390,16 +400,24 @@ export function useGooglePlaces(): GooglePlacesHookResult {
       if (zipCodeComponent) {
         const extractedZipCode = zipCodeComponent.long_name;
         console.log("ZIP code extracted:", extractedZipCode);
+        // If ZIP code is in format 12345-6789, only return the first 5 digits
+        if (extractedZipCode.includes('-')) {
+          return extractedZipCode.split('-')[0];
+        }
         return extractedZipCode;
       }
     }
     
     // Fallback: try to extract zip code from formatted_address using regex
     if (place.formatted_address) {
-      const zipRegex = /\b\d{5}\b/;
+      const zipRegex = /\b\d{5}(?:-\d{4})?\b/;
       const match = place.formatted_address.match(zipRegex);
       if (match && match[0]) {
         console.log("ZIP code extracted from formatted address:", match[0]);
+        // If ZIP code is in format 12345-6789, only return the first 5 digits
+        if (match[0].includes('-')) {
+          return match[0].split('-')[0];
+        }
         return match[0];
       }
     }

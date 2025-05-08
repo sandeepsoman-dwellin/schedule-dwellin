@@ -74,10 +74,10 @@ export function useAddressAutocomplete({
         
         // If still no zip code, try to extract from formatted address
         if (!extractedZipCode && place.formatted_address) {
-          const zipCodeRegex = /\b\d{5}\b/;
+          const zipCodeRegex = /\b\d{5}(?:-\d{4})?\b/;
           const match = place.formatted_address.match(zipCodeRegex);
           if (match && match[0]) {
-            extractedZipCode = match[0];
+            extractedZipCode = match[0].substring(0, 5); // Ensure we only get the first 5 digits
             console.log("ZIP code extracted from formatted address:", extractedZipCode);
             
             // Update the components with the extracted ZIP

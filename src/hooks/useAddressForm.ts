@@ -42,14 +42,14 @@ export function useAddressForm({ onAddressSelect }: UseAddressFormProps) {
     
     // Extract ZIP code if not already provided
     let extractedZipCode = selectedZipCode;
-    if (!extractedZipCode || !/^\d{5}$/.test(extractedZipCode)) {
+    if (!extractedZipCode) {
       // Try to extract from the address string
-      const zipCodeRegex = /\b\d{5}\b/;
+      const zipCodeRegex = /\b\d{5}(?:-\d{4})?\b/;
       const match = selectedAddress.match(zipCodeRegex);
       
       if (match && match[0]) {
         console.log("ZIP code extracted from address string:", match[0]);
-        extractedZipCode = match[0];
+        extractedZipCode = match[0].substring(0, 5); // Ensure we only get the first 5 digits
       }
     }
 
@@ -103,7 +103,7 @@ export function useAddressForm({ onAddressSelect }: UseAddressFormProps) {
     }
 
     // Extract zipcode from address (fallback if autocomplete not used)
-    const zipCodeRegex = /\b\d{5}\b/;
+    const zipCodeRegex = /\b\d{5}(?:-\d{4})?\b/;
     const match = address.match(zipCodeRegex);
     
     if (!match) {
@@ -111,7 +111,7 @@ export function useAddressForm({ onAddressSelect }: UseAddressFormProps) {
       return;
     }
     
-    const extractedZipCode = match[0];
+    const extractedZipCode = match[0].substring(0, 5); // Get first 5 digits
     console.log("ZIP code extracted from manual entry:", extractedZipCode);
     setZipCode(extractedZipCode);
     
@@ -155,10 +155,7 @@ export function useAddressForm({ onAddressSelect }: UseAddressFormProps) {
       country: "US"
     };
     
-    // Format the address consistently
-    const formattedAddress = `${streetNumber} ${streetName}, ${city}, ${state}, ${extractedZipCode} USA`;
-    
-    handleAddressSelection(formattedAddress, extractedZipCode, manualComponents);
+    handleAddressSelection(address, extractedZipCode, manualComponents);
   };
 
   const handleAddressChange = (e: ChangeEvent<HTMLInputElement>) => {
