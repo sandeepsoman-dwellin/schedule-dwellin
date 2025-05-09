@@ -14,12 +14,22 @@ const AddressSearch = ({ onSubmit, autoNavigate = false }: AddressSearchProps) =
 
   const handleAddressSelected = (address: string, zipCode: string, addressComponents?: AddressComponents) => {
     // Extract the zipCode from address components
-    const extractedZipCode = zipCode || (addressComponents?.postal_code || '');
+    let extractedZipCode = '';
+    
+    // First check if postal_code exists in components
+    if (addressComponents?.postal_code) {
+      extractedZipCode = addressComponents.postal_code;
+      console.log('Found ZIP code in address components:', extractedZipCode);
+    } else if (zipCode) {
+      // Use provided zipCode if address components don't have postal_code
+      extractedZipCode = zipCode;
+      console.log('Using provided ZIP code:', extractedZipCode);
+    }
     
     // Always store in session storage if we have a valid ZIP code
     if (extractedZipCode) {
       sessionStorage.setItem("zipCode", extractedZipCode);
-      console.log('Saved ZIP code to session:', extractedZipCode);
+      console.log('Saved ZIP code to session storage:', extractedZipCode);
     }
     
     if (autoNavigate) {

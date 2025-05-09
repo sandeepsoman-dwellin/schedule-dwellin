@@ -69,7 +69,7 @@ export function useAddressAutocomplete({
           return;
         }
         
-        // Get ZIP code from components or try to extract it
+        // Get ZIP code from components
         let extractedZipCode = '';
         
         // First check if postal_code exists in components
@@ -77,8 +77,9 @@ export function useAddressAutocomplete({
           extractedZipCode = components.postal_code;
           console.log("ZIP code found in components:", extractedZipCode);
           
-          // Store in session storage
+          // Explicitly store in session storage here for redundancy
           sessionStorage.setItem("zipCode", extractedZipCode);
+          console.log("ZIP code saved to session storage:", extractedZipCode);
         } else {
           // Try using the helper function
           extractedZipCode = getZipCodeFromPlace(place) || '';
@@ -86,6 +87,7 @@ export function useAddressAutocomplete({
           
           if (extractedZipCode) {
             sessionStorage.setItem("zipCode", extractedZipCode);
+            console.log("ZIP code from place saved to session storage:", extractedZipCode);
           }
           
           // If still no zip code, try to extract from formatted address
@@ -100,6 +102,7 @@ export function useAddressAutocomplete({
               
               // Store in session storage
               sessionStorage.setItem("zipCode", extractedZipCode);
+              console.log("ZIP code from formatted address saved to session storage:", extractedZipCode);
               
               // Update the components with the extracted ZIP
               if (components && !components.postal_code) {
