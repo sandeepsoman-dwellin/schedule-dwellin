@@ -16,6 +16,7 @@ const AddressSearch = ({ onSubmit, autoNavigate = false }: AddressSearchProps) =
     // Extract the zipCode from address components
     let extractedZipCode = '';
     
+    console.log("check Zip: ",addressComponents);
     // First check if postal_code exists in components
     if (addressComponents?.postal_code) {
       extractedZipCode = addressComponents.postal_code;
