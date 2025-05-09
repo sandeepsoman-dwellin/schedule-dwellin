@@ -16,7 +16,7 @@ const AddressSearch = ({ onSubmit, autoNavigate = false }: AddressSearchProps) =
     // Extract the zipCode from address components
     const extractedZipCode = zipCode || (addressComponents?.postal_code || '');
     
-    // Store in session storage
+    // Always store in session storage if we have a valid ZIP code
     if (extractedZipCode) {
       sessionStorage.setItem("zipCode", extractedZipCode);
       console.log('Saved ZIP code to session:', extractedZipCode);

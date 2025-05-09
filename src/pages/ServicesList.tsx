@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import ServiceCard from "@/components/ServiceCard";
 import { useSearchParams, useNavigate } from "react-router-dom";
@@ -13,25 +14,25 @@ const ServicesList = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   
-  // Get ZIP code from URL or session storage
-  const urlZipCode = searchParams.get("zip") || "";
+  // Always try to get ZIP code from session storage first
   const sessionZipCode = sessionStorage.getItem("zipCode") || "";
+  const urlZipCode = searchParams.get("zip") || "";
+  
+  // Prioritize URL ZIP code, then fall back to session ZIP code
   const zipCode = urlZipCode || sessionZipCode;
   
   // If we have a ZIP code in session but not in URL, update URL
   useEffect(() => {
     if (!urlZipCode && sessionZipCode) {
+      // Update URL with ZIP code from session storage
       navigate(`/services?zip=${sessionZipCode}`, { replace: true });
+    } else if (urlZipCode && urlZipCode !== sessionZipCode) {
+      // Update session storage if URL has different ZIP code
+      sessionStorage.setItem("zipCode", urlZipCode);
     }
   }, [urlZipCode, sessionZipCode, navigate]);
   
-  // Store the ZIP from URL into session if provided
-  useEffect(() => {
-    if (urlZipCode) {
-      sessionStorage.setItem("zipCode", urlZipCode);
-    }
-  }, [urlZipCode]);
-  
+  // Always ensure the query is made with the available ZIP code
   const { data: services, isLoading } = useServices(zipCode);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [categories, setCategories] = useState<string[]>([]);
