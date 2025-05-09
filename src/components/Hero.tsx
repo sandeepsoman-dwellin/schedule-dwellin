@@ -23,12 +23,22 @@ const Hero = forwardRef((props, ref) => {
     // Extract ZIP code from addressComponents if not provided directly
     const extractedZipCode = zipCode || (addressComponents?.postal_code || '');
     
+    // Store in session storage
+    if (extractedZipCode) {
+      sessionStorage.setItem("zipCode", extractedZipCode);
+    }
+    
     // Navigate to the services page with the ZIP code
     navigate(`/services?zip=${extractedZipCode}`);
   };
 
   const checkServiceAvailability = async (serviceId: string, zipCode: string) => {
     try {
+      // Store ZIP code in session
+      if (zipCode) {
+        sessionStorage.setItem("zipCode", zipCode);
+      }
+      
       // Fetch services for the given zip code
       const services = await fetchServices(zipCode);
       

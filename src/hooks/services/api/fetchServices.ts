@@ -6,13 +6,18 @@ import { seedSampleData } from "./seedService";
 
 // Helper function to fetch services
 export const fetchServices = async (zipCode?: string): Promise<ServiceBase[]> => {
+  // If no ZIP code provided, try to get it from session storage
+  const zipToUse = zipCode && zipCode.trim() !== '' 
+    ? zipCode 
+    : sessionStorage.getItem("zipCode") || '';
+  
   // Build the query
   let query = supabase.from('services').select('*');
   
   // If zipCode is provided, filter by it or include services with null zip_code
-  if (zipCode && zipCode.trim() !== '') {
-    console.log(`Filtering services by ZIP code: ${zipCode}`);
-    query = query.or(`zip_code.eq.${zipCode},zip_code.is.null`);
+  if (zipToUse && zipToUse.trim() !== '') {
+    console.log(`Filtering services by ZIP code: ${zipToUse}`);
+    query = query.or(`zip_code.eq.${zipToUse},zip_code.is.null`);
   } else {
     console.log('No ZIP code provided, fetching all services');
   }

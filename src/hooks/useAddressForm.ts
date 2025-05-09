@@ -76,7 +76,7 @@ export function useAddressForm({ onAddressSelect }: UseAddressFormProps) {
       localStorage.setItem("addressComponents", JSON.stringify(components));
     }
 
-    // Save address to sessionStorage
+    // Save address and ZIP code to sessionStorage
     sessionStorage.setItem("customerAddress", selectedAddress);
     sessionStorage.setItem("zipCode", extractedZipCode);
     localStorage.setItem("customerAddress", selectedAddress);
@@ -106,10 +106,15 @@ export function useAddressForm({ onAddressSelect }: UseAddressFormProps) {
     // Extract zipcode from address (fallback if autocomplete not used)
     const extractedZipCode = extractZipCodeFromAddress(address);
     
-    // No longer checking if zipCode is valid - proceed with whatever we have
+    // Proceed with whatever ZIP code we have
     let zipToUse = extractedZipCode || '';
     console.log("ZIP code extracted from manual entry:", zipToUse);
     setZipCode(zipToUse);
+    
+    // Store in session storage
+    if (zipToUse) {
+      sessionStorage.setItem("zipCode", zipToUse);
+    }
     
     // Try to parse out address components from manual entry
     // Basic format expected: "Street number Street name, City, State Zip"

@@ -13,14 +13,21 @@ const AddressSearch = ({ onSubmit, autoNavigate = false }: AddressSearchProps) =
   const navigate = useNavigate();
 
   const handleAddressSelected = (address: string, zipCode: string, addressComponents?: AddressComponents) => {
+    // Extract the zipCode from address components
+    const extractedZipCode = zipCode || (addressComponents?.postal_code || '');
+    
+    // Store in session storage
+    if (extractedZipCode) {
+      sessionStorage.setItem("zipCode", extractedZipCode);
+      console.log('Saved ZIP code to session:', extractedZipCode);
+    }
+    
     if (autoNavigate) {
-      // Extract the zipCode from address components and navigate
-      const extractedZipCode = zipCode || (addressComponents?.postal_code || '');
       console.log('Navigating to services with ZIP:', extractedZipCode);
       navigate(`/services?zip=${extractedZipCode}`);
     } else {
       // Use the provided onSubmit handler with address components
-      onSubmit(zipCode, addressComponents);
+      onSubmit(extractedZipCode, addressComponents);
     }
   };
 

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import ServiceCard from "@/components/ServiceCard";
 import { useSearchParams, useNavigate } from "react-router-dom";
@@ -13,7 +12,26 @@ import { Skeleton } from "@/components/ui/skeleton";
 const ServicesList = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const zipCode = searchParams.get("zip") || "";
+  
+  // Get ZIP code from URL or session storage
+  const urlZipCode = searchParams.get("zip") || "";
+  const sessionZipCode = sessionStorage.getItem("zipCode") || "";
+  const zipCode = urlZipCode || sessionZipCode;
+  
+  // If we have a ZIP code in session but not in URL, update URL
+  useEffect(() => {
+    if (!urlZipCode && sessionZipCode) {
+      navigate(`/services?zip=${sessionZipCode}`, { replace: true });
+    }
+  }, [urlZipCode, sessionZipCode, navigate]);
+  
+  // Store the ZIP from URL into session if provided
+  useEffect(() => {
+    if (urlZipCode) {
+      sessionStorage.setItem("zipCode", urlZipCode);
+    }
+  }, [urlZipCode]);
+  
   const { data: services, isLoading } = useServices(zipCode);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [categories, setCategories] = useState<string[]>([]);

@@ -76,10 +76,17 @@ export function useAddressAutocomplete({
         if (components.postal_code) {
           extractedZipCode = components.postal_code;
           console.log("ZIP code found in components:", extractedZipCode);
+          
+          // Store in session storage
+          sessionStorage.setItem("zipCode", extractedZipCode);
         } else {
           // Try using the helper function
           extractedZipCode = getZipCodeFromPlace(place) || '';
           console.log("ZIP code from getZipCodeFromPlace:", extractedZipCode);
+          
+          if (extractedZipCode) {
+            sessionStorage.setItem("zipCode", extractedZipCode);
+          }
           
           // If still no zip code, try to extract from formatted address
           if (!extractedZipCode && place.formatted_address) {
@@ -91,6 +98,9 @@ export function useAddressAutocomplete({
               extractedZipCode = matches[matches.length - 1][0].substring(0, 5);
               console.log("ZIP code extracted from formatted address:", extractedZipCode);
               
+              // Store in session storage
+              sessionStorage.setItem("zipCode", extractedZipCode);
+              
               // Update the components with the extracted ZIP
               if (components && !components.postal_code) {
                 components.postal_code = extractedZipCode;
@@ -98,8 +108,6 @@ export function useAddressAutocomplete({
             }
           }
         }
-        
-        // No longer validating ZIP code - proceed regardless
         
         // Use the formatted_address from Google's response
         const formattedAddress = place.formatted_address;
