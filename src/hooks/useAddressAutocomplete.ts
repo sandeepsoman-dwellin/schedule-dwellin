@@ -79,6 +79,7 @@ export function useAddressAutocomplete({
           
           // CRITICAL: Always store in session storage immediately when we get it
           sessionStorage.setItem("zipCode", extractedZipCode);
+          localStorage.setItem("zipCode", extractedZipCode);
           console.log("ZIP code saved to session storage:", extractedZipCode);
         } else {
           // Try using the helper function
@@ -88,6 +89,7 @@ export function useAddressAutocomplete({
           if (extractedZipCode) {
             // CRITICAL: Store in session storage
             sessionStorage.setItem("zipCode", extractedZipCode);
+            localStorage.setItem("zipCode", extractedZipCode);
             console.log("ZIP code from place saved to session storage:", extractedZipCode);
           }
           
@@ -103,6 +105,7 @@ export function useAddressAutocomplete({
               
               // CRITICAL: Store in session storage
               sessionStorage.setItem("zipCode", extractedZipCode);
+              localStorage.setItem("zipCode", extractedZipCode);
               console.log("ZIP code from formatted address saved to session storage:", extractedZipCode);
               
               // Update the components with the extracted ZIP
@@ -119,6 +122,19 @@ export function useAddressAutocomplete({
         
         // Save address components
         setAddressComponents(components);
+        
+        // Store the full address in session storage too
+        if (formattedAddress) {
+          sessionStorage.setItem("customerAddress", formattedAddress);
+          localStorage.setItem("customerAddress", formattedAddress);
+        }
+        
+        // Store address components as JSON string if available
+        if (components) {
+          const componentsString = JSON.stringify(components);
+          sessionStorage.setItem("addressComponents", componentsString);
+          localStorage.setItem("addressComponents", componentsString);
+        }
         
         // Set both the complete address and extracted zipcode
         setAddress(formattedAddress);

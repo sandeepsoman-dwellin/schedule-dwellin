@@ -6,13 +6,13 @@ import { seedSampleData } from "./seedService";
 
 // Helper function to fetch services
 export const fetchServices = async (zipCode?: string): Promise<ServiceBase[]> => {
-  // Always try to get ZIP code from session storage first
+  // Always try to get ZIP code from session storage first if not provided
   const sessionZipCode = sessionStorage.getItem("zipCode");
   
-  // Use provided zipCode as fallback if session storage is empty
-  const zipToUse = (zipCode && zipCode.trim() !== '') 
+  // Use provided zipCode as priority, then fallback to session storage
+  const zipToUse = zipCode && zipCode.trim() !== '' 
     ? zipCode 
-    : (sessionZipCode && sessionZipCode.trim() !== '')
+    : sessionZipCode && sessionZipCode.trim() !== ''
       ? sessionZipCode
       : '';
   

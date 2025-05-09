@@ -32,8 +32,23 @@ const AddressSearch = ({ onSubmit, autoNavigate = false }: AddressSearchProps) =
     
     // CRITICAL: Always store in session storage if we have a valid ZIP code
     if (extractedZipCode) {
+      // Make sure to save the ZIP code to both sessionStorage and localStorage for persistence
       sessionStorage.setItem("zipCode", extractedZipCode);
-      console.log('CRITICAL - Saved ZIP code to session storage:', extractedZipCode);
+      localStorage.setItem("zipCode", extractedZipCode);
+      console.log('CRITICAL - Saved ZIP code to session/local storage:', extractedZipCode);
+      
+      // Also store the complete address
+      if (address) {
+        sessionStorage.setItem("customerAddress", address);
+        localStorage.setItem("customerAddress", address);
+      }
+      
+      // Store address components as JSON string if available
+      if (addressComponents) {
+        const componentsString = JSON.stringify(addressComponents);
+        sessionStorage.setItem("addressComponents", componentsString);
+        localStorage.setItem("addressComponents", componentsString);
+      }
     }
     
     if (autoNavigate) {
