@@ -10,8 +10,11 @@ export const fetchServices = async (zipCode?: string): Promise<ServiceBase[]> =>
   let query = supabase.from('services').select('*');
   
   // If zipCode is provided, filter by it or include services with null zip_code
-  if (zipCode) {
+  if (zipCode && zipCode.trim() !== '') {
+    console.log(`Filtering services by ZIP code: ${zipCode}`);
     query = query.or(`zip_code.eq.${zipCode},zip_code.is.null`);
+  } else {
+    console.log('No ZIP code provided, fetching all services');
   }
   
   const { data: services, error } = await query.order('name');

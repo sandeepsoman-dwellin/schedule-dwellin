@@ -63,19 +63,9 @@ export function useAddressForm({ onAddressSelect }: UseAddressFormProps) {
       extractedZipCode = extractZipCodeFromAddress(selectedAddress) || '';
       console.log("ZIP code extracted from selection:", extractedZipCode);
     }
-
-    // No longer validating ZIP code format
     
     // Ensure all required components are present
     if (components) {
-      const hasStreet = !!(components.street_number && components.route);
-      const hasCity = !!components.locality;
-      const hasState = !!components.administrative_area_level_1;
-      
-      if (!hasStreet || !hasCity || !hasState) {
-        toast.warning("Address may be incomplete. Please check that it contains street, city, and state.");
-      }
-      
       // Store the extracted zip code in components if missing
       if (!components.postal_code && extractedZipCode) {
         components.postal_code = extractedZipCode;

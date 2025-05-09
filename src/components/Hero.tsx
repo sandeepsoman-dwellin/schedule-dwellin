@@ -20,19 +20,11 @@ const Hero = forwardRef((props, ref) => {
   const handleAddressSubmit = (zipCode: string, addressComponents?: AddressComponents) => {
     console.log("ZIP code submitted:", zipCode, "Components:", addressComponents);
     
-    if (!zipCode) {
-      toast.error("Please provide a valid address with ZIP code");
-      return;
-    }
-    
-    // Check if zip code is valid (simple validation)
-    if (!/^\d{5}$/.test(zipCode)) {
-      toast.error("Please enter a valid 5-digit ZIP code");
-      return;
-    }
+    // Extract ZIP code from addressComponents if not provided directly
+    const extractedZipCode = zipCode || (addressComponents?.postal_code || '');
     
     // Navigate to the services page with the ZIP code
-    navigate(`/services?zip=${zipCode}`);
+    navigate(`/services?zip=${extractedZipCode}`);
   };
 
   const checkServiceAvailability = async (serviceId: string, zipCode: string) => {
@@ -93,11 +85,14 @@ const Hero = forwardRef((props, ref) => {
   };
   
   const handleAddressSelect = (address: string, zipCode: string, components?: AddressComponents) => {
+    // Extract ZIP code from components if not provided directly
+    const extractedZipCode = zipCode || (components?.postal_code || '');
+    
     // Save to both sessionStorage and localStorage
     sessionStorage.setItem("customerAddress", address);
-    sessionStorage.setItem("zipCode", zipCode);
+    sessionStorage.setItem("zipCode", extractedZipCode);
     localStorage.setItem("customerAddress", address);
-    localStorage.setItem("zipCode", zipCode);
+    localStorage.setItem("zipCode", extractedZipCode);
     
     if (components) {
       const componentsString = JSON.stringify(components);
@@ -109,7 +104,7 @@ const Hero = forwardRef((props, ref) => {
     
     // Check service availability if a service was selected
     if (selectedServiceId) {
-      checkServiceAvailability(selectedServiceId, zipCode);
+      checkServiceAvailability(selectedServiceId, extractedZipCode);
     }
   };
 

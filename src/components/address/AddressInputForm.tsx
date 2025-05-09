@@ -136,7 +136,7 @@ const AddressInputForm: React.FC<AddressInputFormProps> = ({
           type="text"
           value={address}
           onChange={handleAddressChange}
-          placeholder={quotaExceeded ? "Enter your address" : "Enter your address"}
+          placeholder="Enter your address"
           className="pl-10 py-6 text-base"
           required
           ref={inputRef}

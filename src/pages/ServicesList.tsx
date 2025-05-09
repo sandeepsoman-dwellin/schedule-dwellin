@@ -26,8 +26,8 @@ const ServicesList = () => {
       );
       setCategories(uniqueCategories);
       
-      // If no services are available, redirect to waitlist page
-      if (services.length === 0 && !isLoading) {
+      // If no services are available and we have a zip code, redirect to waitlist page
+      if (services.length === 0 && !isLoading && zipCode) {
         navigate(`/unavailable?zip=${zipCode}`);
       }
     }

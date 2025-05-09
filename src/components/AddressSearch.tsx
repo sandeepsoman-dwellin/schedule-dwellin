@@ -14,8 +14,10 @@ const AddressSearch = ({ onSubmit, autoNavigate = false }: AddressSearchProps) =
 
   const handleAddressSelected = (address: string, zipCode: string, addressComponents?: AddressComponents) => {
     if (autoNavigate) {
-      // Directly navigate to services page with the zip code
-      navigate(`/services?zip=${zipCode}`);
+      // Extract the zipCode from address components and navigate
+      const extractedZipCode = zipCode || (addressComponents?.postal_code || '');
+      console.log('Navigating to services with ZIP:', extractedZipCode);
+      navigate(`/services?zip=${extractedZipCode}`);
     } else {
       // Use the provided onSubmit handler with address components
       onSubmit(zipCode, addressComponents);

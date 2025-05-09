@@ -101,16 +101,6 @@ export function useAddressAutocomplete({
         
         // No longer validating ZIP code - proceed regardless
         
-        // Ensure we have all required components
-        const hasStreetNumber = !!components.street_number;
-        const hasStreetName = !!components.route;
-        const hasCity = !!components.locality;
-        const hasState = !!components.administrative_area_level_1;
-        
-        if (!hasStreetNumber || !hasStreetName || !hasCity || !hasState) {
-          toast.warning("Address may be incomplete. Please verify all details are correct.");
-        }
-        
         // Use the formatted_address from Google's response
         const formattedAddress = place.formatted_address;
         console.log("Using formatted address:", formattedAddress);
