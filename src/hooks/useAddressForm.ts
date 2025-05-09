@@ -64,13 +64,8 @@ export function useAddressForm({ onAddressSelect }: UseAddressFormProps) {
       console.log("ZIP code extracted from selection:", extractedZipCode);
     }
 
-    // Validate zip code
-    if (!extractedZipCode || !/^\d{5}$/.test(extractedZipCode)) {
-      toast.error("Please enter a valid 5-digit ZIP code");
-      setIsLoading(false);
-      return;
-    }
-
+    // No longer validating ZIP code format
+    
     // Ensure all required components are present
     if (components) {
       const hasStreet = !!(components.street_number && components.route);
@@ -121,13 +116,10 @@ export function useAddressForm({ onAddressSelect }: UseAddressFormProps) {
     // Extract zipcode from address (fallback if autocomplete not used)
     const extractedZipCode = extractZipCodeFromAddress(address);
     
-    if (!extractedZipCode) {
-      toast.error("Please enter an address with a valid ZIP code");
-      return;
-    }
-    
-    console.log("ZIP code extracted from manual entry:", extractedZipCode);
-    setZipCode(extractedZipCode);
+    // No longer checking if zipCode is valid - proceed with whatever we have
+    let zipToUse = extractedZipCode || '';
+    console.log("ZIP code extracted from manual entry:", zipToUse);
+    setZipCode(zipToUse);
     
     // Try to parse out address components from manual entry
     // Basic format expected: "Street number Street name, City, State Zip"
@@ -164,12 +156,12 @@ export function useAddressForm({ onAddressSelect }: UseAddressFormProps) {
       route: streetName,
       locality: city,
       administrative_area_level_1: state,
-      postal_code: extractedZipCode,
+      postal_code: zipToUse,
       formatted_address: address,
       country: "US"
     };
     
-    handleAddressSelection(address, extractedZipCode, manualComponents);
+    handleAddressSelection(address, zipToUse, manualComponents);
   };
 
   const handleAddressChange = (e: ChangeEvent<HTMLInputElement>) => {

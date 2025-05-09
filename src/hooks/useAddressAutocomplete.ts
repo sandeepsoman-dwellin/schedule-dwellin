@@ -99,19 +99,15 @@ export function useAddressAutocomplete({
           }
         }
         
-        if (!extractedZipCode || extractedZipCode.trim() === '') {
-          toast.error("Couldn't find a ZIP code for this address. Please try another address or add the ZIP code manually.");
-          return;
-        }
+        // No longer validating ZIP code - proceed regardless
         
         // Ensure we have all required components
         const hasStreetNumber = !!components.street_number;
         const hasStreetName = !!components.route;
         const hasCity = !!components.locality;
         const hasState = !!components.administrative_area_level_1;
-        const hasZip = !!extractedZipCode;
         
-        if (!hasStreetNumber || !hasStreetName || !hasCity || !hasState || !hasZip) {
+        if (!hasStreetNumber || !hasStreetName || !hasCity || !hasState) {
           toast.warning("Address may be incomplete. Please verify all details are correct.");
         }
         

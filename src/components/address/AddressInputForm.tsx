@@ -136,7 +136,7 @@ const AddressInputForm: React.FC<AddressInputFormProps> = ({
           type="text"
           value={address}
           onChange={handleAddressChange}
-          placeholder={quotaExceeded ? "Enter full address with ZIP code (e.g. 123 Main St, City, 12345)" : "Enter your address"}
+          placeholder={quotaExceeded ? "Enter your address" : "Enter your address"}
           className="pl-10 py-6 text-base"
           required
           ref={inputRef}
@@ -166,7 +166,7 @@ const AddressInputForm: React.FC<AddressInputFormProps> = ({
       {quotaExceeded && (
         <div className="mt-2 flex items-center text-amber-600">
           <AlertCircle className="h-4 w-4 mr-1" />
-          <p className="text-sm">Address autocomplete is limited. Please type your full address including ZIP code.</p>
+          <p className="text-sm">Address autocomplete is limited. Please type your full address.</p>
         </div>
       )}
       {!placesLoaded && !quotaExceeded && (
