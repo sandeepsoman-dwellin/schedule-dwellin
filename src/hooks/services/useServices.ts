@@ -7,6 +7,8 @@ export const useServices = (zipCode?: string) => {
   // Always prioritize the provided zipCode but check session storage as fallback
   const sessionZipCode = sessionStorage.getItem("zipCode");
   const effectiveZipCode = zipCode || sessionZipCode || "";
+  console.log("zip: ", sessionZipCode);
+  console.log("zip2: ", effectiveZipCode);
   
   return useQuery({
     queryKey: ['services', effectiveZipCode],
