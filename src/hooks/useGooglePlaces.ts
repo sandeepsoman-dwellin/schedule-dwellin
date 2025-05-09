@@ -391,6 +391,7 @@ export function useGooglePlaces(): GooglePlacesHookResult {
       return null;
     }
     
+    console.log("Place:", place);
     // Try to extract zip code from address_components
     if (place.address_components) {
       const zipCodeComponent = place.address_components.find(
