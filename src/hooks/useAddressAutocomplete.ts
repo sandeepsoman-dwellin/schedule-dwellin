@@ -77,7 +77,7 @@ export function useAddressAutocomplete({
           extractedZipCode = components.postal_code;
           console.log("ZIP code found in components:", extractedZipCode);
           
-          // Explicitly store in session storage here for redundancy
+          // CRITICAL: Always store in session storage immediately when we get it
           sessionStorage.setItem("zipCode", extractedZipCode);
           console.log("ZIP code saved to session storage:", extractedZipCode);
         } else {
@@ -86,6 +86,7 @@ export function useAddressAutocomplete({
           console.log("ZIP code from getZipCodeFromPlace:", extractedZipCode);
           
           if (extractedZipCode) {
+            // CRITICAL: Store in session storage
             sessionStorage.setItem("zipCode", extractedZipCode);
             console.log("ZIP code from place saved to session storage:", extractedZipCode);
           }
@@ -100,7 +101,7 @@ export function useAddressAutocomplete({
               extractedZipCode = matches[matches.length - 1][0].substring(0, 5);
               console.log("ZIP code extracted from formatted address:", extractedZipCode);
               
-              // Store in session storage
+              // CRITICAL: Store in session storage
               sessionStorage.setItem("zipCode", extractedZipCode);
               console.log("ZIP code from formatted address saved to session storage:", extractedZipCode);
               
