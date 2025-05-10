@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import AddressSearch from "./AddressSearch";
 import { toast } from "sonner";
@@ -17,15 +18,25 @@ const Hero = forwardRef((props, ref) => {
     handleServiceBookNow
   }));
   
+  // Check if we have a stored ZIP code when the component mounts
+  useEffect(() => {
+    const sessionZipCode = sessionStorage.getItem("zipCode");
+    console.log("Hero - Initial session ZIP code:", sessionZipCode);
+  }, []);
+  
   const handleAddressSubmit = (zipCode: string, addressComponents?: AddressComponents) => {
+    console.log("=== HERO ADDRESS SUBMIT ===");
     console.log("ZIP code submitted:", zipCode, "Components:", addressComponents);
     
     // Extract ZIP code from addressComponents if not provided directly
     const extractedZipCode = zipCode || (addressComponents?.postal_code || '');
+    console.log("Extracted ZIP code:", extractedZipCode);
     
     // Store in session storage
     if (extractedZipCode) {
       sessionStorage.setItem("zipCode", extractedZipCode);
+      localStorage.setItem("zipCode", extractedZipCode);
+      console.log("Hero - Saved ZIP code to session/local storage:", extractedZipCode);
     }
     
     // Navigate to the services page with the ZIP code

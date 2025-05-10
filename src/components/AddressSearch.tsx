@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import AddressInput from "@/components/AddressInput";
 import { AddressComponents } from "@/hooks/useGooglePlaces";
@@ -11,6 +11,12 @@ interface AddressSearchProps {
 
 const AddressSearch = ({ onSubmit, autoNavigate = false }: AddressSearchProps) => {
   const navigate = useNavigate();
+
+  // Debug the existing ZIP code when component mounts
+  useEffect(() => {
+    const sessionZipCode = sessionStorage.getItem("zipCode");
+    console.log("AddressSearch - Initial session ZIP code:", sessionZipCode);
+  }, []);
 
   const handleAddressSelected = (address: string, zipCode: string, addressComponents?: AddressComponents) => {
     // Extract the zipCode from address components
@@ -49,6 +55,8 @@ const AddressSearch = ({ onSubmit, autoNavigate = false }: AddressSearchProps) =
         sessionStorage.setItem("addressComponents", componentsString);
         localStorage.setItem("addressComponents", componentsString);
       }
+    } else {
+      console.error("WARNING: No ZIP code was extracted from the selected address!");
     }
     
     if (autoNavigate) {

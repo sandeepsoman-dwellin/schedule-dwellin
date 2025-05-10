@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { Service } from "./types";
 import { fetchServices, fetchServiceDetails, fetchServiceById, seedSampleData } from "./api";
@@ -9,6 +8,7 @@ export const useServices = (zipCode?: string) => {
   const effectiveZipCode = zipCode || sessionZipCode || "";
   
   // Add more detailed logging to track ZIP code flow
+  console.log("=== USE SERVICES ZIP CODE INFO ===");
   console.log("ZIP code provided to useServices:", zipCode);
   console.log("ZIP code from session storage:", sessionZipCode);
   console.log("Effective ZIP code being used:", effectiveZipCode);
@@ -38,7 +38,10 @@ export const useServices = (zipCode?: string) => {
         console.error('Unexpected error in useServices:', error);
         return [];
       }
-    }
+    },
+    // Ensure the query re-runs when the ZIP code changes
+    staleTime: 60000, // 1 minute
+    refetchOnWindowFocus: false
   });
 };
 

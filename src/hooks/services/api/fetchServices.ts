@@ -16,19 +16,21 @@ export const fetchServices = async (zipCode?: string): Promise<ServiceBase[]> =>
       ? sessionZipCode
       : '';
   
-  // Log which ZIP code is being used
-  if (zipToUse && zipToUse.trim() !== '') {
-    console.log(`Filtering services by ZIP code: ${zipToUse}`);
-  } else {
-    console.log('No ZIP code provided, fetching all services');
-  }
+  // CRITICAL: Log ZIP code information for debugging
+  console.log(`=== FETCH SERVICES ZIP CODE INFO ===`);
+  console.log(`Provided ZIP: "${zipCode}"`);
+  console.log(`Session ZIP: "${sessionZipCode}"`);
+  console.log(`ZIP being used: "${zipToUse}"`);
   
   // Build the query
   let query = supabase.from('services').select('*');
   
   // Filter by ZIP code if available
   if (zipToUse && zipToUse.trim() !== '') {
+    console.log(`Filtering services by ZIP code: ${zipToUse}`);
     query = query.or(`zip_code.eq.${zipToUse},zip_code.is.null`);
+  } else {
+    console.log('No ZIP code provided, fetching all services');
   }
   
   const { data: services, error } = await query.order('name');

@@ -18,17 +18,25 @@ const ServicesList = () => {
   const sessionZipCode = sessionStorage.getItem("zipCode") || "";
   const urlZipCode = searchParams.get("zip") || "";
   
+  // DEBUG: Log ZIP code sources
+  console.log("ServicesList - URL ZIP code:", urlZipCode);
+  console.log("ServicesList - Session ZIP code:", sessionZipCode);
+  
   // Prioritize URL ZIP code, then fall back to session ZIP code
   const zipCode = urlZipCode || sessionZipCode;
+  console.log("ServicesList - Using ZIP code:", zipCode);
   
   // If we have a ZIP code in session but not in URL, update URL
   useEffect(() => {
     if (!urlZipCode && sessionZipCode) {
       // Update URL with ZIP code from session storage
+      console.log("Updating URL with session ZIP code:", sessionZipCode);
       navigate(`/services?zip=${sessionZipCode}`, { replace: true });
     } else if (urlZipCode && urlZipCode !== sessionZipCode) {
       // Update session storage if URL has different ZIP code
+      console.log("Updating session storage with URL ZIP code:", urlZipCode);
       sessionStorage.setItem("zipCode", urlZipCode);
+      localStorage.setItem("zipCode", urlZipCode);
     }
   }, [urlZipCode, sessionZipCode, navigate]);
   
