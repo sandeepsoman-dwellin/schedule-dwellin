@@ -27,6 +27,7 @@ const AddressInput = ({ onAddressSelect }: AddressInputProps) => {
     handleSubmit
   } = useAddressForm({ onAddressSelect });
   
+  // Always call useAddressAutocomplete in the same order
   const { placesLoaded, quotaExceeded, containerRef } = useAddressAutocomplete({
     inputRef,
     setAddress,

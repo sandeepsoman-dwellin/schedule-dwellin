@@ -23,20 +23,20 @@ const AddressSearch = ({ onSubmit, autoNavigate = false }: AddressSearchProps) =
   const handleAddressSelected = (address: string, zipCode: string, addressComponents?: AddressComponents) => {
     console.log("=== ADDRESS SEARCH SUBMISSION ===");
     console.log("Selected address:", address);
-    console.log("Initial ZIP code:", zipCode);
+    console.log("ZIP code:", zipCode);
     console.log("Address components:", addressComponents);
     
     // Enhanced ZIP code extraction and validation
     let extractedZipCode = '';
     
-    // First check if postal_code exists in components
-    if (addressComponents?.postal_code && validateZipCode(addressComponents.postal_code)) {
-      extractedZipCode = addressComponents.postal_code;
-      console.log('Found valid ZIP code in address components:', extractedZipCode);
-    } else if (zipCode && validateZipCode(zipCode)) {
-      // Use provided zipCode if it's valid
+    // Use the provided zipCode if it's valid
+    if (zipCode && validateZipCode(zipCode)) {
       extractedZipCode = zipCode;
       console.log('Using provided valid ZIP code:', extractedZipCode);
+    } else if (addressComponents?.postal_code && validateZipCode(addressComponents.postal_code)) {
+      // Fallback to postal_code from components
+      extractedZipCode = addressComponents.postal_code;
+      console.log('Found valid ZIP code in address components:', extractedZipCode);
     } else {
       console.error("No valid ZIP code found in address selection");
       toast.error("Please select an address with a valid ZIP code");

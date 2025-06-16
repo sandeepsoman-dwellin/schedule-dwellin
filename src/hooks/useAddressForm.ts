@@ -30,11 +30,14 @@ export function useAddressForm({ onAddressSelect }: UseAddressFormProps) {
     console.log("Selected ZIP code:", selectedZipCode);
     console.log("Address components:", components);
     
-    // Validate the ZIP code
+    // Validate the ZIP code - but don't show error for autocomplete selections
     if (!selectedZipCode || !validateZipCode(selectedZipCode)) {
       console.error("Invalid ZIP code in address selection:", selectedZipCode);
-      toast.error("Please select an address with a valid ZIP code");
-      return;
+      // Only show error for manual entries, not autocomplete selections
+      if (!components) {
+        toast.error("Please select an address with a valid ZIP code");
+        return;
+      }
     }
     
     // Update state
@@ -43,10 +46,12 @@ export function useAddressForm({ onAddressSelect }: UseAddressFormProps) {
     setAddressComponents(components || null);
     
     // Store the ZIP code with validation
-    const stored = storeZipCode(selectedZipCode, selectedAddress);
-    if (!stored) {
-      toast.error("Failed to store address information");
-      return;
+    if (selectedZipCode && validateZipCode(selectedZipCode)) {
+      const stored = storeZipCode(selectedZipCode, selectedAddress);
+      if (!stored) {
+        toast.error("Failed to store address information");
+        return;
+      }
     }
     
     // Store address components if available
@@ -60,8 +65,10 @@ export function useAddressForm({ onAddressSelect }: UseAddressFormProps) {
       }
     }
     
-    // Call the callback
-    onAddressSelect(selectedAddress, selectedZipCode, components);
+    // Call the callback immediately for autocomplete selections with valid ZIP
+    if (selectedZipCode && validateZipCode(selectedZipCode)) {
+      onAddressSelect(selectedAddress, selectedZipCode, components);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -77,7 +84,7 @@ export function useAddressForm({ onAddressSelect }: UseAddressFormProps) {
         finalZipCode = extractZipCode(address) || '';
       }
       
-      // Validate the ZIP code
+      // For manual entry, validate more strictly
       if (!finalZipCode || !validateZipCode(finalZipCode)) {
         toast.error("Please enter a complete address with a valid 5-digit ZIP code");
         setIsLoading(false);

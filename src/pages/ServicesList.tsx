@@ -76,11 +76,11 @@ const ServicesList = () => {
       );
       setCategories(uniqueCategories);
       
-      // Enhanced service availability logic
+      // Enhanced service availability logic - redirect to waitlist if no services
       if (services.length === 0 && !isLoading && zipCode && validateZipCode(zipCode)) {
         console.log(`No services available for ZIP code ${zipCode}, redirecting to waitlist`);
         navigate(`/unavailable?zip=${zipCode}`);
-      } else if (services.length === 0 && !isLoading && !zipCode) {
+      } else if (!zipCode && !isLoading) {
         console.log("No ZIP code available, redirecting to home");
         navigate("/");
       }
