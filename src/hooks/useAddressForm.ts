@@ -13,10 +13,14 @@ export function useAddressForm({ onAddressSelect }: UseAddressFormProps) {
   const [addressComponents, setAddressComponents] = useState<AddressComponents | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [validationError, setValidationError] = useState("");
+  const [isAutocompleteSelected, setIsAutocompleteSelected] = useState(false);
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setAddress(value);
+    
+    // Reset autocomplete flag when user manually types
+    setIsAutocompleteSelected(false);
     
     // Clear validation error when user starts typing
     if (validationError) {
@@ -40,10 +44,11 @@ export function useAddressForm({ onAddressSelect }: UseAddressFormProps) {
     // Clear any existing validation errors immediately
     setValidationError("");
     
-    // Update state
+    // Update state and mark as autocomplete selection
     setAddress(selectedAddress);
     setZipCode(selectedZipCode);
     setAddressComponents(components || null);
+    setIsAutocompleteSelected(true);
     
     // For autocomplete selections, always proceed if we have any ZIP code
     if (selectedZipCode && validateZipCode(selectedZipCode)) {
@@ -79,7 +84,25 @@ export function useAddressForm({ onAddressSelect }: UseAddressFormProps) {
     setValidationError(""); // Clear any existing errors
     
     try {
-      // Enhanced manual address processing
+      // If this was an autocomplete selection, don't revalidate - just proceed
+      if (isAutocompleteSelected && zipCode && validateZipCode(zipCode)) {
+        console.log("Proceeding with autocomplete-selected address:", { address, zipCode });
+        
+        // Store the ZIP code again to ensure it's saved
+        const stored = storeZipCode(zipCode, address);
+        if (!stored) {
+          setValidationError("Failed to store address information");
+          setIsLoading(false);
+          return;
+        }
+        
+        // Call the callback with existing data
+        onAddressSelect(address, zipCode, addressComponents);
+        setIsLoading(false);
+        return;
+      }
+      
+      // For manual entry, enhanced validation
       let finalZipCode = zipCode;
       
       // If no ZIP code extracted yet, try one more time
@@ -138,6 +161,7 @@ export function useAddressForm({ onAddressSelect }: UseAddressFormProps) {
     setIsLoading,
     validationError,
     setValidationError,
+    isAutocompleteSelected,
     handleAddressChange,
     handleAddressSelection,
     handleSubmit

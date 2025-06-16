@@ -2,7 +2,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MapPin, Search } from "lucide-react";
+import { MapPin, Search, CheckCircle } from "lucide-react";
 
 interface AddressInputFormProps {
   address: string;
@@ -14,6 +14,7 @@ interface AddressInputFormProps {
   quotaExceeded: boolean;
   containerRef: React.RefObject<HTMLDivElement>;
   validationError?: string;
+  isAutocompleteSelected?: boolean;
 }
 
 const AddressInputForm = ({
@@ -25,14 +26,19 @@ const AddressInputForm = ({
   placesLoaded,
   quotaExceeded,
   containerRef,
-  validationError
+  validationError,
+  isAutocompleteSelected
 }: AddressInputFormProps) => {
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-2xl mx-auto">
       <div className="relative">
         <div className="relative flex items-center">
           <div className="absolute left-3 z-10">
-            <MapPin className="h-5 w-5 text-gray-400" />
+            {isAutocompleteSelected ? (
+              <CheckCircle className="h-5 w-5 text-green-500" />
+            ) : (
+              <MapPin className="h-5 w-5 text-gray-400" />
+            )}
           </div>
           
           <div className="relative w-full">
@@ -45,6 +51,8 @@ const AddressInputForm = ({
               className={`pl-10 pr-24 py-4 text-lg border-2 transition-all duration-200 ${
                 validationError 
                   ? 'border-red-500 focus:border-red-500 focus:ring-red-500' 
+                  : isAutocompleteSelected
+                  ? 'border-green-500 focus:border-green-500 focus:ring-green-500'
                   : 'border-gray-300 focus:border-dwellin-sky focus:ring-dwellin-sky'
               }`}
               disabled={isLoading}
@@ -78,6 +86,16 @@ const AddressInputForm = ({
             )}
           </Button>
         </div>
+        
+        {/* Success message for autocomplete selections */}
+        {isAutocompleteSelected && !validationError && (
+          <div className="mt-2 text-sm text-green-600 flex items-center">
+            <div className="bg-green-50 border border-green-200 rounded-md px-3 py-2 flex items-center">
+              <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
+              Address verified with ZIP code
+            </div>
+          </div>
+        )}
         
         {/* Validation error message */}
         {validationError && (
