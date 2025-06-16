@@ -22,6 +22,7 @@ const AddressInput = ({ onAddressSelect }: AddressInputProps) => {
     setAddressComponents,
     isLoading,
     setIsLoading,
+    validationError,
     handleAddressChange,
     handleAddressSelection,
     handleSubmit
@@ -46,6 +47,7 @@ const AddressInput = ({ onAddressSelect }: AddressInputProps) => {
       placesLoaded={placesLoaded}
       quotaExceeded={quotaExceeded}
       containerRef={containerRef}
+      validationError={validationError}
     />
   );
 };

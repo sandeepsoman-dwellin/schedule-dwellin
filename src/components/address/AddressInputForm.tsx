@@ -1,8 +1,8 @@
 
-import React, { useRef } from "react";
-import { Input } from "@/components/ui/input";
+import React from "react";
 import { Button } from "@/components/ui/button";
-import { MapPin, Search, AlertCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { MapPin, Search } from "lucide-react";
 
 interface AddressInputFormProps {
   address: string;
@@ -12,10 +12,11 @@ interface AddressInputFormProps {
   inputRef: React.RefObject<HTMLInputElement>;
   placesLoaded: boolean;
   quotaExceeded: boolean;
-  containerRef?: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement>;
+  validationError?: string;
 }
 
-const AddressInputForm: React.FC<AddressInputFormProps> = ({
+const AddressInputForm = ({
   address,
   handleAddressChange,
   handleSubmit,
@@ -23,155 +24,81 @@ const AddressInputForm: React.FC<AddressInputFormProps> = ({
   inputRef,
   placesLoaded,
   quotaExceeded,
-  containerRef
-}) => {
-  // Reference for the autocomplete position wrapper
-  const autocompletePositionRef = useRef<HTMLDivElement>(null);
-  
-  // Function to handle elements when they mount
-  React.useEffect(() => {
-    // If we have a containerRef and its current, and we have a position ref, set up the autocomplete
-    if (containerRef?.current && autocompletePositionRef.current && placesLoaded && !quotaExceeded) {
-      // Clear previous contents
-      if (autocompletePositionRef.current.firstChild !== containerRef.current) {
-        autocompletePositionRef.current.innerHTML = '';
-        autocompletePositionRef.current.appendChild(containerRef.current);
-        
-        // Apply custom styles to make it match the requested format
-        const containerStyle = `
-          .address-suggestions-container {
-            background-color: white;
-            border: 1px solid #e2e8f0;
-            border-top: none;
-            border-radius: 0 0 0.375rem 0.375rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            max-height: 300px;
-            overflow-y: auto;
-          }
-          
-          .suggestion-item {
-            display: flex;
-            align-items: center;
-            padding: 10px 12px;
-            border-bottom: 1px solid #f3f4f6;
-            cursor: pointer;
-          }
-          
-          .suggestion-item:hover {
-            background-color: #f9fafb;
-          }
-          
-          .suggestion-text {
-            display: flex;
-            align-items: center;
-            width: 100%;
-            overflow: hidden;
-            text-align: left;
-          }
-          
-          .suggestion-main-text {
-            font-weight: 500;
-            margin-right: 5px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          }
-          
-          .suggestion-secondary-text {
-            color: #6b7280;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          }
-        `;
-        
-        // Add the styles to the document
-        const styleEl = document.createElement('style');
-        styleEl.textContent = containerStyle;
-        document.head.appendChild(styleEl);
-        
-        // Modify existing suggestion items or set up a mutation observer to apply styles to new items
-        const observer = new MutationObserver((mutations) => {
-          mutations.forEach(mutation => {
-            if (mutation.addedNodes.length) {
-              const container = document.querySelector('.address-suggestions-container');
-              if (container) {
-                const items = container.querySelectorAll('.suggestion-item');
-                items.forEach(item => {
-                  // Ensure the text container has horizontal layout
-                  const textContainer = item.querySelector('[style*="flex: 1"]');
-                  if (textContainer) {
-                    (textContainer as HTMLElement).style.display = 'flex';
-                    (textContainer as HTMLElement).style.alignItems = 'center';
-                    (textContainer as HTMLElement).style.textAlign = 'left';
-                    (textContainer as HTMLElement).style.overflow = 'hidden';
-                  }
-                });
-              }
-            }
-          });
-        });
-        
-        if (containerRef.current) {
-          observer.observe(containerRef.current, { childList: true, subtree: true });
-        }
-        
-        return () => {
-          observer.disconnect();
-          if (styleEl.parentNode) {
-            styleEl.parentNode.removeChild(styleEl);
-          }
-        };
-      }
-    }
-  }, [containerRef, autocompletePositionRef, placesLoaded, quotaExceeded]);
-
+  containerRef,
+  validationError
+}: AddressInputFormProps) => {
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-md mx-auto relative">
+    <form onSubmit={handleSubmit} className="w-full max-w-2xl mx-auto">
       <div className="relative">
-        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none z-10">
-          <MapPin className="h-5 w-5 text-gray-400" />
+        <div className="relative flex items-center">
+          <div className="absolute left-3 z-10">
+            <MapPin className="h-5 w-5 text-gray-400" />
+          </div>
+          
+          <div className="relative w-full">
+            <Input
+              ref={inputRef}
+              type="text"
+              value={address}
+              onChange={handleAddressChange}
+              placeholder="Enter your complete address with ZIP code"
+              className={`pl-10 pr-24 py-4 text-lg border-2 transition-all duration-200 ${
+                validationError 
+                  ? 'border-red-500 focus:border-red-500 focus:ring-red-500' 
+                  : 'border-gray-300 focus:border-dwellin-sky focus:ring-dwellin-sky'
+              }`}
+              disabled={isLoading}
+            />
+            
+            {/* Position the autocomplete container */}
+            {containerRef.current && (
+              <div 
+                ref={containerRef} 
+                className="absolute top-full left-0 right-0 z-50"
+                style={{ 
+                  position: 'absolute',
+                  top: '100%',
+                  left: '0',
+                  right: '0',
+                  zIndex: 50
+                }}
+              />
+            )}
+          </div>
+          
+          <Button 
+            type="submit" 
+            className="absolute right-2 bg-dwellin-sky hover:bg-dwellin-sky/90 text-white px-4 py-2 rounded-md"
+            disabled={isLoading || !address.trim()}
+          >
+            {isLoading ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            ) : (
+              <Search className="h-4 w-4" />
+            )}
+          </Button>
         </div>
-        <Input
-          type="text"
-          value={address}
-          onChange={handleAddressChange}
-          placeholder="Enter your address"
-          className="pl-10 py-6 text-base"
-          required
-          ref={inputRef}
-          autoComplete="off" // Disable browser's native autocomplete
-        />
-        {!placesLoaded && !quotaExceeded && (
-          <div className="absolute inset-y-0 right-12 flex items-center">
-            <div className="h-4 w-4 border-t-2 border-b-2 border-dwellin-sky rounded-full animate-spin" />
+        
+        {/* Validation error message */}
+        {validationError && (
+          <div className="mt-2 text-sm text-red-600 flex items-center">
+            <div className="bg-red-50 border border-red-200 rounded-md px-3 py-2 flex items-center">
+              <svg className="w-4 h-4 mr-2 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              {validationError}
+            </div>
           </div>
         )}
-        <Button 
-          type="submit" 
-          className="absolute right-1 top-1 bottom-1 px-4 bg-dwellin-sky hover:bg-opacity-90 text-white z-10"
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <div className="h-5 w-5 border-t-2 border-b-2 border-white rounded-full animate-spin" />
-          ) : (
-            <Search className="h-5 w-5" />
-          )}
-        </Button>
+        
+        {quotaExceeded && (
+          <div className="mt-2 text-sm text-amber-600">
+            <div className="bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+              Address search is limited. Please type your complete address including ZIP code.
+            </div>
+          </div>
+        )}
       </div>
-      
-      {/* Position container for Google Places autocomplete suggestions */}
-      <div ref={autocompletePositionRef} className="absolute left-0 right-0 z-40"></div>
-      
-      {quotaExceeded && (
-        <div className="mt-2 flex items-center text-amber-600">
-          <AlertCircle className="h-4 w-4 mr-1" />
-          <p className="text-sm">Address autocomplete is limited. Please type your full address.</p>
-        </div>
-      )}
-      {!placesLoaded && !quotaExceeded && (
-        <p className="text-sm text-gray-500 mt-2">Loading address search...</p>
-      )}
     </form>
   );
 };
