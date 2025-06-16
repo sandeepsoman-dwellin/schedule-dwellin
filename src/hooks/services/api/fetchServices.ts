@@ -3,34 +3,43 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ServiceBase } from "../types";
 import { seedSampleData } from "./seedService";
+import { validateZipCode } from "@/hooks/useGooglePlaces";
 
-// Helper function to fetch services
+// Enhanced helper function to fetch services with better ZIP code handling
 export const fetchServices = async (zipCode?: string): Promise<ServiceBase[]> => {
   // Always try to get ZIP code from session storage first if not provided
   const sessionZipCode = sessionStorage.getItem("zipCode");
   
   // Use provided zipCode as priority, then fallback to session storage
-  const zipToUse = zipCode && zipCode.trim() !== '' 
+  let zipToUse = zipCode && zipCode.trim() !== '' 
     ? zipCode 
     : sessionZipCode && sessionZipCode.trim() !== ''
       ? sessionZipCode
       : '';
+  
+  // Validate ZIP code format
+  if (zipToUse && !validateZipCode(zipToUse)) {
+    console.warn(`Invalid ZIP code format: "${zipToUse}". Fetching all services instead.`);
+    zipToUse = '';
+  }
   
   // CRITICAL: Log ZIP code information for debugging
   console.log(`=== FETCH SERVICES ZIP CODE INFO ===`);
   console.log(`Provided ZIP: "${zipCode}"`);
   console.log(`Session ZIP: "${sessionZipCode}"`);
   console.log(`ZIP being used: "${zipToUse}"`);
+  console.log(`ZIP validation result: ${zipToUse ? validateZipCode(zipToUse) : 'N/A'}`);
   
-  // Build the query
+  // Build the optimized query
   let query = supabase.from('services').select('*');
   
-  // Filter by ZIP code if available
+  // Filter by ZIP code if available and valid
   if (zipToUse && zipToUse.trim() !== '') {
     console.log(`Filtering services by ZIP code: ${zipToUse}`);
+    // Optimized query: exact match OR null (for services available everywhere)
     query = query.or(`zip_code.eq.${zipToUse},zip_code.is.null`);
   } else {
-    console.log('No ZIP code provided, fetching all services');
+    console.log('No valid ZIP code provided, fetching all services');
   }
   
   const { data: services, error } = await query.order('name');
@@ -41,10 +50,17 @@ export const fetchServices = async (zipCode?: string): Promise<ServiceBase[]> =>
     throw error;
   }
 
-  // If no services found, seed sample data
+  console.log(`Found ${services?.length || 0} services for ZIP code: ${zipToUse}`);
+
+  // If no services found, seed sample data only if we have a valid ZIP code
   if (!services || services.length === 0) {
-    console.log('No services found, attempting to seed sample data...');
-    return await seedSampleData();
+    if (zipToUse) {
+      console.log(`No services found for ZIP code ${zipToUse}. User should be redirected to waitlist.`);
+      return []; // Return empty array to trigger waitlist redirect
+    } else {
+      console.log('No services found, attempting to seed sample data...');
+      return await seedSampleData();
+    }
   }
 
   return services;

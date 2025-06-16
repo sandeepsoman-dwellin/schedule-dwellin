@@ -9,39 +9,62 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useServices } from "@/hooks/services";
 import { Skeleton } from "@/components/ui/skeleton";
+import { validateZipCode } from "@/hooks/useGooglePlaces";
+import { toast } from "sonner";
 
 const ServicesList = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   
-  // Always try to get ZIP code from session storage first
+  // Enhanced ZIP code handling with validation
   const sessionZipCode = sessionStorage.getItem("zipCode") || "";
   const urlZipCode = searchParams.get("zip") || "";
   
   // DEBUG: Log ZIP code sources
+  console.log("=== SERVICES LIST ZIP CODE ANALYSIS ===");
   console.log("ServicesList - URL ZIP code:", urlZipCode);
   console.log("ServicesList - Session ZIP code:", sessionZipCode);
+  console.log("URL ZIP valid:", validateZipCode(urlZipCode));
+  console.log("Session ZIP valid:", validateZipCode(sessionZipCode));
   
-  // Prioritize URL ZIP code, then fall back to session ZIP code
-  const zipCode = urlZipCode || sessionZipCode;
-  console.log("ServicesList - Using ZIP code:", zipCode);
+  // Prioritize valid ZIP codes
+  let zipCode = '';
+  if (urlZipCode && validateZipCode(urlZipCode)) {
+    zipCode = urlZipCode;
+  } else if (sessionZipCode && validateZipCode(sessionZipCode)) {
+    zipCode = sessionZipCode;
+  }
   
-  // If we have a ZIP code in session but not in URL, update URL
+  console.log("ServicesList - Final ZIP code to use:", zipCode);
+  
+  // Enhanced URL synchronization with validation
   useEffect(() => {
-    if (!urlZipCode && sessionZipCode) {
-      // Update URL with ZIP code from session storage
-      console.log("Updating URL with session ZIP code:", sessionZipCode);
-      navigate(`/services?zip=${sessionZipCode}`, { replace: true });
-    } else if (urlZipCode && urlZipCode !== sessionZipCode) {
-      // Update session storage if URL has different ZIP code
+    if (!urlZipCode && zipCode && validateZipCode(zipCode)) {
+      // Update URL with valid ZIP code from session storage
+      console.log("Updating URL with session ZIP code:", zipCode);
+      setSearchParams({ zip: zipCode });
+    } else if (urlZipCode && validateZipCode(urlZipCode) && urlZipCode !== sessionZipCode) {
+      // Update session storage if URL has different valid ZIP code
       console.log("Updating session storage with URL ZIP code:", urlZipCode);
       sessionStorage.setItem("zipCode", urlZipCode);
       localStorage.setItem("zipCode", urlZipCode);
+    } else if (urlZipCode && !validateZipCode(urlZipCode)) {
+      // Handle invalid ZIP code in URL
+      console.warn("Invalid ZIP code in URL:", urlZipCode);
+      toast.error("Invalid ZIP code format. Please enter a valid 5-digit ZIP code.");
+      
+      if (sessionZipCode && validateZipCode(sessionZipCode)) {
+        // Redirect to valid session ZIP code
+        setSearchParams({ zip: sessionZipCode });
+      } else {
+        // Redirect to home if no valid ZIP code
+        navigate("/");
+      }
     }
-  }, [urlZipCode, sessionZipCode, navigate]);
+  }, [urlZipCode, sessionZipCode, zipCode, navigate, setSearchParams]);
   
-  // Always ensure the query is made with the available ZIP code
-  const { data: services, isLoading } = useServices(zipCode);
+  // Always ensure the query is made with a valid ZIP code
+  const { data: services, isLoading, error } = useServices(zipCode);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [categories, setCategories] = useState<string[]>([]);
 
@@ -53,12 +76,34 @@ const ServicesList = () => {
       );
       setCategories(uniqueCategories);
       
-      // If no services are available and we have a zip code, redirect to waitlist page
-      if (services.length === 0 && !isLoading && zipCode) {
+      // Enhanced service availability logic
+      if (services.length === 0 && !isLoading && zipCode && validateZipCode(zipCode)) {
+        console.log(`No services available for ZIP code ${zipCode}, redirecting to waitlist`);
         navigate(`/unavailable?zip=${zipCode}`);
+      } else if (services.length === 0 && !isLoading && !zipCode) {
+        console.log("No ZIP code available, redirecting to home");
+        navigate("/");
       }
     }
   }, [services, isLoading, zipCode, navigate]);
+
+  // Handle loading and error states
+  if (error) {
+    console.error("Error loading services:", error);
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        <main className="flex-grow py-12">
+          <div className="container mx-auto px-4 text-center">
+            <h1 className="text-2xl font-bold mb-4">Error Loading Services</h1>
+            <p className="text-gray-600 mb-4">There was a problem loading the services. Please try again.</p>
+            <Button onClick={() => window.location.reload()}>Retry</Button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   const filteredServices = selectedCategory === "all" 
     ? services 
@@ -76,7 +121,7 @@ const ServicesList = () => {
               <span>Back to Home</span>
             </Link>
             <h1 className="text-3xl md:text-4xl font-bold">Available Services</h1>
-            {zipCode && (
+            {zipCode && validateZipCode(zipCode) && (
               <p className="text-gray-600">Services available in {zipCode}</p>
             )}
           </div>
@@ -132,10 +177,10 @@ const ServicesList = () => {
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-gray-500">No services available at this time.</p>
+              <p className="text-gray-500">No services available{zipCode ? ` in ${zipCode}` : ''} at this time.</p>
               <Button 
                 className="mt-4 bg-dwellin-sky hover:bg-opacity-90 text-white"
-                onClick={() => navigate(`/unavailable?zip=${zipCode}`)}
+                onClick={() => navigate(zipCode ? `/unavailable?zip=${zipCode}` : '/unavailable')}
               >
                 Join Waitlist
               </Button>

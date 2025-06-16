@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 
@@ -27,6 +28,55 @@ export interface GooglePlacesHookResult {
   quotaExceeded: boolean;
   getPlacePredictions: (input: string) => Promise<any[]>;
 }
+
+// Enhanced ZIP code extraction utility
+export const extractZipCode = (address: string): string | null => {
+  if (!address) return null;
+  
+  // Enhanced regex to match various ZIP code formats
+  const zipRegex = /\b(\d{5})(?:-\d{4})?\b/g;
+  const matches = Array.from(address.matchAll(zipRegex));
+  
+  if (matches && matches.length > 0) {
+    // Return the last match which is more likely to be the ZIP code
+    return matches[matches.length - 1][1]; // Return only the 5-digit part
+  }
+  
+  return null;
+};
+
+// Enhanced ZIP code validation
+export const validateZipCode = (zipCode: string): boolean => {
+  if (!zipCode) return false;
+  
+  // Check if it's a valid 5-digit US ZIP code
+  const zipRegex = /^\d{5}$/;
+  return zipRegex.test(zipCode.trim());
+};
+
+// Enhanced ZIP code storage with validation
+export const storeZipCode = (zipCode: string, address?: string): boolean => {
+  if (!validateZipCode(zipCode)) {
+    console.warn("Invalid ZIP code format:", zipCode);
+    return false;
+  }
+  
+  try {
+    sessionStorage.setItem("zipCode", zipCode);
+    localStorage.setItem("zipCode", zipCode);
+    
+    if (address) {
+      sessionStorage.setItem("customerAddress", address);
+      localStorage.setItem("customerAddress", address);
+    }
+    
+    console.log("✅ ZIP code stored successfully:", zipCode);
+    return true;
+  } catch (error) {
+    console.error("Failed to store ZIP code:", error);
+    return false;
+  }
+};
 
 export function useGooglePlaces(): GooglePlacesHookResult {
   const [placesLoaded, setPlacesLoaded] = useState(false);
@@ -240,7 +290,7 @@ export function useGooglePlaces(): GooglePlacesHookResult {
               item.style.backgroundColor = 'transparent';
             });
             
-            // Handle click
+            // Handle click with enhanced ZIP code extraction
             item.addEventListener('click', () => {
               if (inputRef.current) {
                 // Use the formatted_address property when it gets available
@@ -249,17 +299,48 @@ export function useGooglePlaces(): GooglePlacesHookResult {
                   (place: any, status: string) => {
                     if (status === window.google.maps.places.PlacesServiceStatus.OK && place) {
                       // Use the formatted_address from the place details
+                      const formattedAddress = place.formatted_address;
+                      
                       if (inputRef.current) {
-                        inputRef.current.value = place.formatted_address;
+                        inputRef.current.value = formattedAddress;
                       }
                       
-                      // Create a synthetic event that matches the place_changed event format
-                      const placeChangedEvent = new CustomEvent('place_changed', {
-                        detail: { place }
-                      });
+                      // Enhanced ZIP code extraction and validation
+                      let extractedZipCode = '';
+                      const components = getAddressComponents(place);
                       
-                      // Dispatch the event on the container
-                      container.dispatchEvent(placeChangedEvent);
+                      if (components?.postal_code) {
+                        extractedZipCode = components.postal_code;
+                      } else {
+                        // Fallback extraction from formatted address
+                        extractedZipCode = extractZipCode(formattedAddress) || '';
+                      }
+                      
+                      // Validate and store ZIP code
+                      if (extractedZipCode && validateZipCode(extractedZipCode)) {
+                        storeZipCode(extractedZipCode, formattedAddress);
+                        
+                        // Store address components as JSON
+                        if (components) {
+                          const componentsString = JSON.stringify(components);
+                          sessionStorage.setItem("addressComponents", componentsString);
+                          localStorage.setItem("addressComponents", componentsString);
+                        }
+                        
+                        // Create a synthetic event with the place data
+                        const placeChangedEvent = new CustomEvent('place_changed', {
+                          detail: { place }
+                        });
+                        
+                        // Dispatch the event on the container
+                        container.dispatchEvent(placeChangedEvent);
+                      } else {
+                        console.error("Invalid or missing ZIP code in selected address");
+                        toast.error("Please select an address with a valid ZIP code");
+                      }
+                    } else {
+                      console.error("Failed to get place details:", status);
+                      toast.error("Failed to get address details. Please try again.");
                     }
                   }
                 );
@@ -322,7 +403,7 @@ export function useGooglePlaces(): GooglePlacesHookResult {
           }
         });
         
-        console.log("Autocomplete setup complete with AutocompleteService");
+        console.log("Autocomplete setup complete with enhanced ZIP code handling");
       }
     } catch (error) {
       console.error("Error initializing Places Autocomplete:", error);
@@ -388,18 +469,9 @@ export function useGooglePlaces(): GooglePlacesHookResult {
       }
     }
     
-    // Fallback: try to extract zip code from formatted_address using regex
+    // Fallback: try to extract zip code from formatted_address using enhanced regex
     if (place.formatted_address) {
-      const zipRegex = /\b\d{5}(?:-\d{4})?\b/;
-      const match = place.formatted_address.match(zipRegex);
-      if (match && match[0]) {
-        console.log("ZIP code extracted from formatted address:", match[0]);
-        // If ZIP code is in format 12345-6789, only return the first 5 digits
-        if (match[0].includes('-')) {
-          return match[0].split('-')[0];
-        }
-        return match[0];
-      }
+      return extractZipCode(place.formatted_address);
     }
     
     return null;
