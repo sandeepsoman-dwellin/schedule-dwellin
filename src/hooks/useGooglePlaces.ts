@@ -209,44 +209,23 @@ export function useGooglePlaces(): GooglePlacesHookResult {
             iconContainer.style.alignItems = 'center';
             iconContainer.style.justifyContent = 'center';
             iconContainer.style.color = '#9ca3af'; // gray-400
+            iconContainer.style.flexShrink = '0'; // Prevent icon from shrinking
             iconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
             
-            // Create the text container with structured formatting - Make it a single line
+            // Create the text container with the full address
             const textContainer = document.createElement('div');
             textContainer.style.flex = '1';
-            textContainer.style.whiteSpace = 'nowrap';
+            textContainer.style.minWidth = '0'; // Allow text to shrink
             textContainer.style.overflow = 'hidden';
             textContainer.style.textOverflow = 'ellipsis';
+            textContainer.style.whiteSpace = 'nowrap';
+            textContainer.style.textAlign = 'left';
+            textContainer.style.fontSize = '14px';
+            textContainer.style.lineHeight = '1.4';
             
-            // Extract main and secondary parts
-            const mainText = prediction.structured_formatting?.main_text || '';
-            const secondaryText = prediction.structured_formatting?.secondary_text || '';
-            
-            if (prediction.structured_formatting) {
-              // Combine main and secondary text with space
-              const fullText = document.createElement('div');
-              fullText.style.textAlign = 'left';
-              
-              // Add the main text (street) in normal weight
-              const mainSpan = document.createElement('span');
-              mainSpan.style.fontWeight = '500';
-              mainSpan.textContent = mainText;
-              fullText.appendChild(mainSpan);
-              
-              // Add a space
-              fullText.appendChild(document.createTextNode(' '));
-              
-              // Add the secondary text (city, state) in gray
-              const secondarySpan = document.createElement('span');
-              secondarySpan.style.color = '#6b7280'; // gray-500
-              secondarySpan.textContent = secondaryText;
-              fullText.appendChild(secondarySpan);
-              
-              textContainer.appendChild(fullText);
-            } else {
-              // Fallback if structured_formatting is not available
-              textContainer.textContent = prediction.description;
-            }
+            // Use the complete description which includes the ZIP code
+            textContainer.textContent = prediction.description;
+            textContainer.title = prediction.description; // Add tooltip for full address
             
             // Assemble the item
             item.appendChild(iconContainer);
